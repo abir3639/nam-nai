@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+*.log
+Ungsrz-1.c
+Untitled-1.c
+*.exe
