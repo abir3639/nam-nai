@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aegis-DeepSpace | Autonomous Decision Engine (Pillar 4)</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- TOP HEADER -->
+    <header class="mission-header">
+      <div class="logo-area">
+        <div class="mission-crest">AEGIS</div>
+        <div class="mission-title">
+          <h1>AEGIS-DEEPSPACE</h1>
+          <p class="subtitle">Pillar 4: Offline Autonomous AI Flight Surgeon</p>
+        </div>
+      </div>
+
+      <div class="header-controls">
+        <div class="status-indicator" id="commsBadge">
+          <span class="status-dot online"></span>
+          <span class="status-text" id="commsStatusText">ONLINE [EARTH LINK ACTIVE]</span>
+        </div>
+        <button id="toggleCommsBtn" class="btn btn-outline" title="Simulate 20-min communication blackout">
+          ⚡ TOGGLE BLACKOUT
+        </button>
+        <div class="telemetry-age">
+          <span class="label">DATA AGE:</span>
+          <span id="dataFreshness" class="val">5s</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- DISCLAIMER BANNER -->
+    <div class="disclaimer-banner">
+      ⚠️ <strong>RESEARCH PROTOTYPE ONLY:</strong> Clinical decision support system for Mars-forward analog research. Not a certified medical device. Recommendations provide decision co-pilot support.
+    </div>
+
+    <!-- SCENARIO SWITCHER -->
+    <section class="scenario-panel">
+      <div class="panel-header">
+        <span class="section-tag">SIMULATION SUITE</span>
+        <h2>DEMO SCENARIOS</h2>
+      </div>
+      <div class="scenario-buttons" id="scenarioBtnGroup">
+        <button class="scenario-btn active" data-scenario="normal">1. Nominal Baseline</button>
+        <button class="scenario-btn" data-scenario="solar_storm">2. Solar Storm (SPE)</button>
+        <button class="scenario-btn" data-scenario="voice_anomaly">3. Voice Anomaly</button>
+        <button class="scenario-btn" data-scenario="combined_anomaly">4. Combined Anomaly</button>
+        <button class="scenario-btn" data-scenario="offline_blackout">5. Offline Blackout</button>
+        <button class="scenario-btn" data-scenario="uncertain_data">6. Uncertain Data</button>
+      </div>
+    </section>
+
+    <!-- MAIN TWO-COLUMN DASHBOARD LAYOUT -->
+    <main class="dashboard-grid">
+      <!-- LEFT COLUMN: SENSORY PILLARS 1-3 -->
+      <section class="pillars-column">
+        <div class="section-heading">
+          <span class="section-tag">INPUT TELEMETRY</span>
+          <h2>MULTIMODAL SENSORY STREAM</h2>
+        </div>
+
+        <!-- PILLAR 1: RADIATION SAFE-ROUTE -->
+        <div class="card pillar-card" id="cardPillar1">
+          <div class="card-header">
+            <div class="pillar-label">
+              <span class="pillar-num">P1</span>
+              <h3>RADIATION SAFE-ROUTE</h3>
+            </div>
+            <span class="badge" id="radRiskBadge">LOW RISK</span>
+          </div>
+          <div class="card-body">
+            <div class="metric-row">
+              <div class="metric">
+                <span class="lbl">Dose Rate</span>
+                <span class="val" id="p1DoseRate">0.02 <small>mSv/h</small></span>
+              </div>
+              <div class="metric">
+                <span class="lbl">Cumulative Dose</span>
+                <span class="val" id="p1CumDose">1.2 <small>mSv</small></span>
+              </div>
+              <div class="metric">
+                <span class="lbl">SPE Active</span>
+                <span class="val" id="p1SpeActive">NO</span>
+              </div>
+            </div>
+            <div class="topology-box">
+              <div class="topology-item">
+                <span class="lbl">Current Module:</span>
+                <strong id="p1CurrentModule">Command Module</strong>
+                <span class="shielding" id="p1Shielding">(12.0 g/cm²)</span>
+              </div>
+              <div class="topology-item">
+                <span class="lbl">Safe Shelter:</span>
+                <strong class="highlight" id="p1SafeModule">Command Module</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PILLAR 2: VOICE VITALS -->
+        <div class="card pillar-card" id="cardPillar2">
+          <div class="card-header">
+            <div class="pillar-label">
+              <span class="pillar-num">P2</span>
+              <h3>VOICE VITALS (PASSIVE)</h3>
+            </div>
+            <span class="badge" id="voiceRiskBadge">NORMAL</span>
+          </div>
+          <div class="card-body">
+            <div class="gauge-grid">
+              <div class="gauge-item">
+                <span class="lbl">Cognitive Strain</span>
+                <div class="progress-bar"><div class="fill" id="barCognitive" style="width: 12%"></div></div>
+                <span class="gauge-val" id="valCognitive">0.12</span>
+              </div>
+              <div class="gauge-item">
+                <span class="lbl">Acoustic Fatigue</span>
+                <div class="progress-bar"><div class="fill" id="barFatigue" style="width: 10%"></div></div>
+                <span class="gauge-val" id="valFatigue">0.10</span>
+              </div>
+              <div class="gauge-item">
+                <span class="lbl">Hypoxia Marker</span>
+                <div class="progress-bar"><div class="fill" id="barHypoxia" style="width: 4%"></div></div>
+                <span class="gauge-val" id="valHypoxia">0.04</span>
+              </div>
+            </div>
+            <div class="baseline-note">
+              Personal Baseline Deviation: <strong id="valBaselineDev">+0.3σ</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- PILLAR 3: ASTRO-TWIN -->
+        <div class="card pillar-card" id="cardPillar3">
+          <div class="card-header">
+            <div class="pillar-label">
+              <span class="pillar-num">P3</span>
+              <h3>ASTRO-TWIN (PREDICTIVE)</h3>
+            </div>
+            <span class="badge" id="twinStatusBadge">NOMINAL</span>
+          </div>
+          <div class="card-body">
+            <div class="metric-row">
+              <div class="metric">
+                <span class="lbl">Projected Bone Loss</span>
+                <span class="val" id="p3BoneLoss">0.8% <small>/mo</small></span>
+              </div>
+              <div class="metric">
+                <span class="lbl">Muscle Atrophy</span>
+                <span class="val" id="p3MuscleLoss">1.5%</span>
+              </div>
+              <div class="metric">
+                <span class="lbl">Exercise Deficit</span>
+                <span class="val" id="p3DeficitDays">0 <small>days</small></span>
+              </div>
+            </div>
+            <div class="twin-prediction-box">
+              <span class="lbl">Countermeasure Projection (14-day Horizon):</span>
+              <strong id="p3Countermeasure">Adherence nominal; bone mineral density within normal variance.</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT COLUMN: PILLAR 4 AUTONOMOUS DECISION ENGINE -->
+      <section class="engine-column">
+        <div class="section-heading">
+          <span class="section-tag">PILLAR 4 CORE</span>
+          <h2>AUTONOMOUS DECISION SUPPORT</h2>
+        </div>
+
+        <!-- RISK FUSION PIPELINE & MATHEMATICAL BREAKDOWN (P1 + P2 + P3 -> Pillar 4 -> Decision) -->
+        <div class="card fusion-pipeline-card">
+          <div class="card-header">
+            <div class="fusion-header-title">
+              <span class="fusion-icon">⚡</span>
+              <h3>MULTIMODAL RISK FUSION PIPELINE</h3>
+            </div>
+            <span class="formula-badge" id="fusionFormulaDisplay">0.10 (Base) = 0.10</span>
+          </div>
+          <div class="card-body">
+            <!-- Visual Flow: P1 + P2 + P3 -> Pillar 4 -> Final Decision -->
+            <div class="pipeline-flow-diagram">
+              <div class="flow-step">
+                <span class="step-num">P1</span>
+                <span class="step-title">Radiation Safe-Route</span>
+              </div>
+              <span class="flow-op">+</span>
+              <div class="flow-step">
+                <span class="step-num">P2</span>
+                <span class="step-title">Voice Vitals</span>
+              </div>
+              <span class="flow-op">+</span>
+              <div class="flow-step">
+                <span class="step-num">P3</span>
+                <span class="step-title">Astro-Twin</span>
+              </div>
+              <span class="flow-arrow">➔</span>
+              <div class="flow-step highlight-step">
+                <span class="step-num">P4</span>
+                <span class="step-title">Fusion Engine</span>
+              </div>
+              <span class="flow-arrow">➔</span>
+              <div class="flow-step result-step" id="flowResultBadge">
+                <span class="step-title" id="flowResultText">Final Decision</span>
+              </div>
+            </div>
+
+            <!-- Detailed Mathematical Breakdown from decision_engine.py -->
+            <div class="fusion-cards-grid">
+              <!-- Base -->
+              <div class="fusion-card">
+                <div class="fc-header">
+                  <span class="fc-pillar">BASE</span>
+                  <span class="fc-points" id="fcBasePoints">+0.10</span>
+                </div>
+                <div class="fc-status" id="fcBaseStatus">NOMINAL</div>
+                <div class="fc-detail">Nominal baseline</div>
+              </div>
+
+              <!-- P1 Radiation -->
+              <div class="fusion-card" id="fcP1Card">
+                <div class="fc-header">
+                  <span class="fc-pillar">P1: RADIATION</span>
+                  <span class="fc-points" id="fcP1Points">+0.00</span>
+                </div>
+                <div class="fc-status" id="fcP1Status">NOMINAL</div>
+                <div class="fc-detail" id="fcP1Detail">Dose within limits</div>
+              </div>
+
+              <!-- P2 Voice Vitals -->
+              <div class="fusion-card" id="fcP2Card">
+                <div class="fc-header">
+                  <span class="fc-pillar">P2: VOICE VITALS</span>
+                  <span class="fc-points" id="fcP2Points">+0.00</span>
+                </div>
+                <div class="fc-status" id="fcP2Status">NOMINAL</div>
+                <div class="fc-detail" id="fcP2Detail">Within baseline</div>
+              </div>
+
+              <!-- P3 Astro-Twin -->
+              <div class="fusion-card" id="fcP3Card">
+                <div class="fc-header">
+                  <span class="fc-pillar">P3: ASTRO-TWIN</span>
+                  <span class="fc-points" id="fcP3Points">+0.00</span>
+                </div>
+                <div class="fc-status" id="fcP3Status">NOMINAL</div>
+                <div class="fc-detail" id="fcP3Detail">Musculoskeletal stable</div>
+              </div>
+
+              <!-- Synergy / Escalation -->
+              <div class="fusion-card synergy-card" id="fcSynergyCard">
+                <div class="fc-header">
+                  <span class="fc-pillar">SYNERGY</span>
+                  <span class="fc-points" id="fcSynergyPoints">+0.00</span>
+                </div>
+                <div class="fc-status" id="fcSynergyStatus">NONE</div>
+                <div class="fc-detail" id="fcSynergyDetail">No multi-signal escalation</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PRIMARY DECISION HERO CARD -->
+        <div class="card decision-hero-card" id="decisionHeroCard">
+          <div class="hero-header">
+            <div class="risk-overview">
+              <div class="risk-pill" id="heroRiskLevel">LOW RISK</div>
+              <div class="score-display">
+                <span class="score-num" id="heroRiskScore">0.10</span>
+                <span class="score-scale">/ 1.00 Fused Risk</span>
+              </div>
+            </div>
+            <div class="meta-tag" id="decisionMetaTag">DEC-8F29A | OFFLINE READY</div>
+          </div>
+
+          <!-- RECOMMENDED ACTION -->
+          <div class="recommendation-box">
+            <div class="action-tag">RECOMMENDED ACTION (DECISION SUPPORT)</div>
+            <p class="action-text" id="recActionText">CONTINUE NOMINAL OPERATIONS: All vital metrics nominal. Maintain routine 24-hour passive monitoring cycle.</p>
+            <div class="alt-action">
+              <span class="lbl">Alternative Contingency:</span>
+              <span id="altActionText">No corrective intervention required.</span>
+            </div>
+          </div>
+
+          <!-- CONFIDENCE & UNCERTAINTY BAR -->
+          <div class="confidence-strip">
+            <div class="conf-item">
+              <span class="lbl">SYSTEM CONFIDENCE:</span>
+              <strong id="confidenceVal">92%</strong>
+            </div>
+            <div class="conf-item" id="uncertaintyItem">
+              <span class="lbl">UNCERTAINTY:</span>
+              <span id="uncertaintyText">None detected. High SNR across all channels.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- EXPLAINABILITY "WHY" TREE -->
+        <div class="card detail-card">
+          <div class="card-header">
+            <h3>EXPLAINABLE REASONING ("WHY")</h3>
+            <span class="sub-header-tag">DETERMINISTIC FUSION</span>
+          </div>
+          <div class="card-body">
+            <ul class="reasoning-list" id="reasoningList">
+              <li>All environmental, biometric, and physiological digital twin metrics remain within nominal operational boundaries.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- CONTRIBUTING FACTORS TABLE -->
+        <div class="card detail-card">
+          <div class="card-header">
+            <h3>CONTRIBUTING FACTORS</h3>
+            <span class="sub-header-tag">MULTIMODAL ATTRIBUTION</span>
+          </div>
+          <div class="card-body table-responsive">
+            <table class="factors-table">
+              <thead>
+                <tr>
+                  <th>Pillar</th>
+                  <th>Observation</th>
+                  <th>Severity Impact</th>
+                  <th>Metric Detail</th>
+                </tr>
+              </thead>
+              <tbody id="factorsTableBody">
+                <tr>
+                  <td colspan="4" class="empty-state">No anomalous factors detected.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- LOCAL NASA RESEARCH EVIDENCE -->
+        <div class="card detail-card">
+          <div class="card-header">
+            <h3>LOCAL NASA EVIDENCE CITATIONS</h3>
+            <span class="sub-header-tag">OFFLINE RAG KNOWLEDGE</span>
+          </div>
+          <div class="card-body" id="evidenceContainer">
+            <!-- Evidence cards dynamically inserted -->
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="app-footer">
+      <div>Aegis-DeepSpace Autonomous AI Flight Surgeon MVP — Synthesizing Pillars 1, 2, & 3 for 20-min Delay Comms Resilience</div>
+      <div class="footer-links">
+        <span>NASA Human Research Roadmap (HRR)</span>
+        <span>•</span>
+        <span>NASA NTRS Exploration Atmospheres</span>
+        <span>•</span>
+        <span>NASA LSDA / OSDR</span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
