@@ -6,3 +6,5 @@ __pycache__/
 Ungsrz-1.c
 Untitled-1.c
 *.exe
+.idea/
+.vscode/
