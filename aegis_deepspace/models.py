@@ -99,6 +99,35 @@ class RiskFusionBreakdown(BaseModel):
     formula: str = Field(..., description="Readable formula string, e.g., 0.10 + 0.45 + 0.00 + 0.00 = 0.55")
 
 
+class TraceSignal(BaseModel):
+    """Detailed signal trace component in DecisionTrace."""
+    source: str = Field(..., description="Pillar source: P1, P2, P3")
+    name: str = Field(..., description="Signal name")
+    metric: str = Field(..., description="Metric description, e.g. Dose rate, Cognitive strain")
+    value: str = Field(..., description="Observed value formatted as string with units")
+    threshold: str = Field(..., description="Evaluation threshold condition")
+    contribution: float = Field(..., description="Score addition to risk score")
+    triggered: bool = Field(..., description="Whether threshold condition was triggered")
+    explanation: str = Field(..., description="Deterministic rationale for contribution")
+
+
+class TraceSynergyRule(BaseModel):
+    """Multi-signal escalation rule in DecisionTrace."""
+    name: str = Field(..., description="Synergy rule name")
+    triggered: bool = Field(..., description="Whether synergy condition was triggered")
+    contribution: float = Field(..., description="Score addition")
+    explanation: str = Field(..., description="Explanation of multi-signal escalation")
+
+
+class DecisionTrace(BaseModel):
+    """Transparent deterministic breakdown of decision engine input thresholds and contributions."""
+    base_risk: float = Field(default=0.10, description="Nominal background baseline risk score")
+    signals: List[TraceSignal] = Field(default_factory=list)
+    synergy_rules: List[TraceSynergyRule] = Field(default_factory=list)
+    final_risk: float = Field(..., description="Composite risk score [0.05, 0.99]")
+    final_level: RiskLevel = Field(..., description="Mapped categorical risk level")
+
+
 class DecisionObject(BaseModel):
     """Structured decision output produced by Pillar 4."""
     decision_id: str
@@ -109,6 +138,9 @@ class DecisionObject(BaseModel):
     
     # Mathematical fusion trace
     risk_fusion: Optional[RiskFusionBreakdown] = None
+    
+    # Structured Decision Trace for Explain Decision panel
+    decision_trace: Optional[DecisionTrace] = None
     
     # Explainability elements
     reasons: List[str] = Field(default_factory=list, description="Bulleted explainable justifications")

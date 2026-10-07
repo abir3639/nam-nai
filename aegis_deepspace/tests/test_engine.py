@@ -180,3 +180,54 @@ def test_risk_fusion_breakdown(engine):
     assert rf.final_score == decision.risk_score
     assert "Base" in rf.formula and "P1 Rad" in rf.formula
 
+
+def test_decision_trace_structure_and_matching(engine):
+    """Test 13: Decision trace contains actual contributing signals and matches engine decision."""
+    state = get_scenario_combined_anomaly()
+    decision = engine.process(state)
+
+    assert decision.decision_trace is not None
+    trace = decision.decision_trace
+    assert trace.base_risk == 0.10
+    assert trace.final_risk == decision.risk_score
+    assert trace.final_level == decision.risk_level
+
+    # Check signals
+    assert len(trace.signals) == 3
+    sources = [s.source for s in trace.signals]
+    assert "P1" in sources and "P2" in sources and "P3" in sources
+
+    # P1 signal verification
+    p1_sig = next(s for s in trace.signals if s.source == "P1")
+    assert p1_sig.triggered is True
+    assert p1_sig.contribution > 0
+    assert "Threshold" in p1_sig.threshold or ">=" in p1_sig.threshold
+
+    # Synergy rules verification
+    assert len(trace.synergy_rules) >= 2
+    multi_rule = next(r for r in trace.synergy_rules if "Multi-Pillar" in r.name)
+    assert multi_rule.triggered is True
+    assert multi_rule.contribution > 0
+
+
+def test_what_if_simulation_endpoint():
+    """Test 14: What-If simulation is deterministic and passes through existing P4 engine."""
+    from aegis_deepspace.server import simulate_evacuation_delay, WhatIfDelayRequest
+    
+    # 0 min delay
+    res_0a = simulate_evacuation_delay(WhatIfDelayRequest(delay_minutes=0.0, scenario="solar_storm"))
+    res_0b = simulate_evacuation_delay(WhatIfDelayRequest(delay_minutes=0.0, scenario="solar_storm"))
+    assert res_0a["counterfactual"]["risk_score"] == res_0b["counterfactual"]["risk_score"]
+    assert res_0a["impact"]["delta_exposure_msv"] == 0.0
+
+    # 30 min delay vs 60 min delay
+    res_30 = simulate_evacuation_delay(WhatIfDelayRequest(delay_minutes=30.0, scenario="solar_storm"))
+    res_60 = simulate_evacuation_delay(WhatIfDelayRequest(delay_minutes=60.0, scenario="solar_storm"))
+
+    # Monotonic exposure increase: delay cannot decrease exposure
+    assert res_60["counterfactual"]["projected_exposure_msv"] >= res_30["counterfactual"]["projected_exposure_msv"]
+    assert res_30["impact"]["delta_exposure_msv"] > 0
+    assert res_60["impact"]["delta_exposure_msv"] > res_30["impact"]["delta_exposure_msv"]
+    assert res_60["counterfactual"]["risk_score"] >= res_0a["baseline"]["risk_score"]
+    assert "decision_trace" in res_60["counterfactual"]
+

@@ -15,7 +15,10 @@ from aegis_deepspace.models import (
     ContributingFactor,
     EvidenceCitation,
     PillarContribution,
-    RiskFusionBreakdown
+    RiskFusionBreakdown,
+    DecisionTrace,
+    TraceSignal,
+    TraceSynergyRule
 )
 from aegis_deepspace.knowledge_base import retrieve_relevant_evidence
 
@@ -307,6 +310,63 @@ class AutonomousDecisionEngine:
             formula=formula_str
         )
 
+        # 7. Build the Structured Decision Trace (Explain Decision)
+        trace_signals: List[TraceSignal] = [
+            TraceSignal(
+                source="P1",
+                name="Radiation Safe-Route",
+                metric="Ambient Dose Rate & SPE Status",
+                value=f"{rad.dose_rate_msv_h:.2f} mSv/h ({'SPE ACTIVE' if rad.spe_active else 'NOMINAL GCR'}) in {rad.current_module}",
+                threshold=f"Critical >= {self.radiation_critical_dose_rate:.2f} mSv/h, High >= {self.radiation_high_dose_rate:.2f} mSv/h",
+                contribution=round(p1_score, 2),
+                triggered=rad_anomaly or p1_score > 0,
+                explanation=p1_detail
+            ),
+            TraceSignal(
+                source="P2",
+                name="Voice Vitals",
+                metric="Fatigue, Cognitive Strain & Hypoxia Index",
+                value=f"Strain: {voice.cognitive_strain_score:.2f}, Fatigue: {voice.fatigue_score:.2f}, Hypoxia: {voice.hypoxia_indicator:.2f} (+{voice.deviation_from_baseline_z:.1f}σ)",
+                threshold=f"Hypoxia >= {self.voice_hypoxia_threshold:.2f}, High Strain >= {self.voice_high_strain:.2f}, Drift >= +2.0σ",
+                contribution=round(p2_score, 2),
+                triggered=voice_anomaly or p2_score > 0,
+                explanation=p2_detail
+            ),
+            TraceSignal(
+                source="P3",
+                name="Astro-Twin [SIMULATED]",
+                metric="Exercise Deficit & Bone Mineral Density Loss",
+                value=f"{twin.exercise_deficit_days} missed exercise days, -{twin.projected_bone_loss_pct_mo:.1f}% BMD/mo",
+                threshold=f"Critical Deficit >= {self.twin_critical_deficit_days}d, Warning >= {self.twin_high_deficit_days}d or Loss > {self.twin_bone_loss_warning_pct:.1f}%/mo",
+                contribution=round(p3_score, 2),
+                triggered=twin_anomaly or p3_score > 0,
+                explanation=p3_detail
+            )
+        ]
+
+        trace_synergy_rules: List[TraceSynergyRule] = [
+            TraceSynergyRule(
+                name="Multi-Pillar Concordance Escalation",
+                triggered=active_anomaly_count >= 2,
+                contribution=round(0.20 if active_anomaly_count >= 3 else (0.10 if active_anomaly_count == 2 else 0.0), 2),
+                explanation=f"{active_anomaly_count} independent pillars detected concurrent anomalies." if active_anomaly_count >= 2 else "No coincident multi-pillar trigger threshold reached."
+            ),
+            TraceSynergyRule(
+                name="Hypoxia-Cognitive Impairment Coupling",
+                triggered=hypoxia_anomaly and voice.cognitive_strain_score >= self.voice_medium_strain,
+                contribution=round(0.10 if (hypoxia_anomaly and voice.cognitive_strain_score >= self.voice_medium_strain) else 0.0, 2),
+                explanation="Acoustic hypoxia biomarker coincides with psychomotor cognitive slowing." if (hypoxia_anomaly and voice.cognitive_strain_score >= self.voice_medium_strain) else "No hypoxia-cognitive coupling detected."
+            )
+        ]
+
+        decision_trace = DecisionTrace(
+            base_risk=baseline_score,
+            signals=trace_signals,
+            synergy_rules=trace_synergy_rules,
+            final_risk=round(final_risk_score, 2),
+            final_level=risk_level
+        )
+
         return DecisionObject(
             decision_id=decision_id,
             timestamp=timestamp,
@@ -314,6 +374,7 @@ class AutonomousDecisionEngine:
             risk_level=risk_level,
             risk_score=round(final_risk_score, 2),
             risk_fusion=risk_fusion_breakdown,
+            decision_trace=decision_trace,
             reasons=reasons,
             contributing_factors=contributing_factors,
             recommended_action=rec_action,

@@ -1,35 +1,48 @@
-# Aegis-DeepSpace: Pillar 4 Autonomous Decision Engine (Offline AI Flight Surgeon)
+# Aegis-DeepSpace: Four-Pillar Deep-Space Health Architecture & Autonomous Decision Engine
 
 Aegis-DeepSpace is an offline-capable crew health and habitat decision support system designed for deep-space exploration under 20-minute communication latency or total Earth blackout.
 
-This repository implements the **Autonomous Decision Engine (Pillar 4)**, synthesizing telemetry and alerts from:
-1. **Pillar 1: Environmental Defense — Radiation Safe-Route** (SPE/CME flux, habitat module shielding topology)
-2. **Pillar 2: Passive Biometrics — Voice Vitals** (Passive voice logs detecting fatigue, cognitive strain, and early hypoxia)
-3. **Pillar 3: Predictive Twin — Astro-Twin** (Forward-simulated musculoskeletal deconditioning under shelter restrictions)
+The system is architected across **four foundational pillars**:
+1. **Pillar 1: Environmental Defense — Radiation Safe-Route** (**REAL IMPLEMENTATION**)
+   - Spacecraft habitat topology graph (`networkx`)
+   - Internal hull compartment dose calculation
+   - Dijkstra pathfinding minimizing cumulative absorbed transit radiation
+   - NASA DONKI Solar Particle Event (SEP/SPE) telemetry with offline fallback
+2. **Pillar 2: Passive Biometrics — Voice Vitals** (**REAL IMPLEMENTATION**)
+   - Acoustic prosody and 1D-CNN (MFCC-13) for fatigue and early hypoxia markers
+   - Whisper STT (`tiny.en`) transcript extraction
+   - DistilBERT sentiment classification for affective mood valence and cognitive strain
+   - Personalized z-score drift tracking against baseline
+3. **Pillar 3: Predictive Twin — Astro-Twin** (**REAL IMPLEMENTATION**)
+   - Hybrid biomechanical Frost's Mechanostat ODE modeling microgravity bone mineral density (BMD) loss
+   - Scikit-Learn Gradient Boosting Regressor (`models/astro_twin_residual_gbm.joblib`) trained on 180-day ISS ARED mission dataset
+   - 30-day forward trajectory simulation comparing nominal vs shelter confinement/outage deconditioning
+   - Compensatory countermeasure prescription: mechanical work deficit (kg), required volume surge (%), and specific ARED exercise load adjustments (barbell squat, deadlift)
+4. **Pillar 4: Autonomous Decision Engine** (**REAL IMPLEMENTATION**)
+   - Multimodal risk fusion synthesizing P1, P2, and P3
+   - Synergy escalation & cross-pillar feedback loop detection
+   - 100% offline edge execution citing local NASA standards (HRR, NTRS, LSDA)
 
 ---
 
-## Architecture: Multimodal Risk Fusion
+## Target System Architecture
 
 ```
-P1: Radiation Safe-Route   +   P2: Voice Vitals   +   P3: Astro-Twin
-                          │
-                          ▼
-            [ Autonomous Decision Engine (Pillar 4) ]
-       - Normalization (Standardized CrewState)
-       - Multimodal Risk Fusion & Synergy Escalation
-       - Local Offline NASA Evidence (HRR, NTRS, LSDA)
-       - Explainable Reasons ("Why") & Decision Support
-                          │
-                          ▼
-      [ Flight Surgeon Decision Support Dashboard & CLI ]
+REAL P1 (Radiation Safe-Route) ─┐
+REAL P2 (Voice Vitals)        ─┼─> P4 Fusion Engine (Offline AI Surgeon) ─> Mission Control Dashboard
+REAL P3 (Astro-Twin)           ─┘
 ```
 
-### Risk Fusion Mathematical Trace
-$$\text{Fused Risk Score} = \text{Base (0.10)} + \text{P1 Rad} + \text{P2 Voice} + \text{P3 Twin} + \text{Synergy}$$
-- Categorized into: `LOW`, `MEDIUM`, `HIGH`, `CRITICAL`.
-- Multi-signal synergy escalation: Simultaneous coincident anomalies elevate risk non-linearly.
-- Closed-loop feedback: Radiation-enforced sheltering triggering Astro-Twin exercise deficits is flagged automatically.
+### Visual Data Flow:
+$$\text{P1 (Real)} + \text{P2 (Real)} + \text{P3 (Real)} \xrightarrow{\text{Normalization}} \text{P4 (Fusion)} \rightarrow \text{Crew Risk / Explainable Actions}$$
+
+### Implementation Status Matrix
+| Pillar | Status | Core Technologies | Data Interface |
+|---|---|---|---|
+| **P1: Radiation Safe-Route** | **REAL** | NetworkX Graph, Dijkstra Routing, NASA DONKI API | `RadiationState` & `/api/pillar1/*` |
+| **P2: Voice Vitals** | **REAL** | OpenAI Whisper STT, PyTorch MFCC-CNN, DistilBERT NLP | `VoiceVitalsState` & `/api/pillar2/*` |
+| **P3: Astro-Twin** | **REAL** | Hybrid Mechanostat ODE, Scikit-Learn GBM, ARED Model | `AstroTwinState` & `/api/pillar3/*` |
+| **P4: Autonomous Decision Engine** | **REAL** | Multimodal risk fusion, synergy rules, local NASA RAG | `DecisionObject` |
 
 ---
 
@@ -37,10 +50,10 @@ $$\text{Fused Risk Score} = \text{Base (0.10)} + \text{P1 Rad} + \text{P2 Voice}
 
 ### Prerequisites
 - Python 3.10+
-- Dependencies: `fastapi`, `uvicorn`, `pydantic`, `pytest`, `httpx`
+- Dependencies: `fastapi`, `uvicorn`, `pydantic`, `pytest`, `httpx`, `networkx`, `requests`
 
 ```bash
-pip install fastapi uvicorn pydantic pytest httpx
+pip install fastapi uvicorn pydantic pytest httpx networkx requests
 ```
 
 ### Running the Terminal CLI Demo
@@ -56,8 +69,13 @@ python run_demo.py --serve
 ```
 Open **[http://127.0.0.1:8000](http://127.0.0.1:8000)** in your browser.
 
-- Click between the 6 scenario buttons to inspect real-time telemetry, risk fusion breakdown, reasons, and NASA research citations.
-- Toggle the **BLACKOUT** button to simulate losing contact with Earth and observe edge autonomous decision mode.
+- **Mission Control Dashboard**: Four-pillar overview cards, live telemetry stream, real-time risk fusion pipeline, and flight surgeon recommendations.
+- **Dedicated Pillar Pages**:
+  - **P1: Radiation Safe-Route**: Interactive habitat compartment exposure table, custom Dijkstra evacuation path recalculation, and DONKI space weather alert panel.
+  - **P2: Voice Vitals**: Speech-to-text transcription via Whisper STT, sentiment/mood valence via DistilBERT, and acoustic fatigue/hypoxia analysis via 1D-CNN.
+  - **P3: Astro-Twin**: 30-day forward BMD projection via Frost's Mechanostat ODE + Gradient Boosting residual ML model, and adaptive compensatory countermeasure prescription.
+  - **P4: Decision Engine**: Mathematical fusion formulas, multi-signal synergy escalation rules, local offline NASA research evidence citations, and counterfactual What-If simulation.
+- **Toggle Blackout**: Simulate losing Earth connection (20-min Mars delay) to demonstrate autonomous edge decision support.
 
 ---
 
@@ -77,9 +95,9 @@ Open **[http://127.0.0.1:8000](http://127.0.0.1:8000)** in your browser.
 ```bash
 pytest aegis_deepspace/tests -v
 ```
-All 17 automated unit and integration tests verify deterministic decision rules, synergy scoring, staleness penalties, and REST endpoints.
+All 24 automated unit and integration tests verify deterministic decision rules, real Pillar 1 pathfinding, synergy scoring, and REST endpoints.
 
 ---
 
 ## Disclaimer
-*This project is a hackathon/research prototype for clinical decision support under spaceflight communication delays. It does NOT serve as a certified medical device or autonomous medical authority.*
+*This project is a research prototype for clinical decision support under deep-space communication delays. It does NOT serve as a certified medical device or autonomous medical authority.*
