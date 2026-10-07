@@ -1,0 +1,20 @@
+{
+  "ASTRO-01": {
+    "name": "Cmdr. Shepard",
+    "fatigue_mean": 0.20,
+    "fatigue_std": 0.05,
+    "hypoxia_mean": 0.10,
+    "hypoxia_std": 0.02,
+    "mood_mean": 0.85,
+    "mood_std": 0.10
+  },
+  "ASTRO-02": {
+    "name": "Dr. Vance",
+    "fatigue_mean": 0.35,
+    "fatigue_std": 0.08,
+    "hypoxia_mean": 0.12,
+    "hypoxia_std": 0.03,
+    "mood_mean": 0.60,
+    "mood_std": 0.20
+  }
+}

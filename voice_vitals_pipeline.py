@@ -103,19 +103,46 @@ class VoiceVitalsFusionEngine:
 
 
 # 3. EXECUTION BLOCK
-if __name__ == "__main__":
-    engine = VoiceVitalsFusionEngine()
+        import os
 
-    mock_baseline = {
-        "fatigue_mean": 0.20, "fatigue_std": 0.05,
-        "hypoxia_mean": 0.10, "hypoxia_std": 0.02,
-        "mood_mean": 0.75, "mood_std": 0.15
-    }
+        def load_astronaut_baseline(crew_id: str, db_path="astronaut_profiles.json") -> dict:
+            """Simulates a database fetch for the astronaut's historical baseline."""
+            if not os.path.exists(db_path):
+                raise FileNotFoundError(f"Database {db_path} not found.")
 
-    try:
-        print("\nProcessing 'test_audio.wav'...")
-        result_json = engine.process_daily_log("test_audio.wav", mock_baseline)
-        print("\n--- Output JSON Payload for Dashboard ---")
-        print(result_json)
-    except Exception as e:
-        print(f"\nERROR: Could not process audio. Did you place 'test_audio.wav' in the folder? \nDetails: {e}")
+            with open(db_path, "r") as db_file:
+                profiles = json.load(db_file)
+
+            if crew_id not in profiles:
+                raise ValueError(f"Crew ID {crew_id} not found in database.")
+
+            return profiles[crew_id]
+
+        # ==========================================
+        # 3. EXECUTION BLOCK
+        # ==========================================
+        if __name__ == "__main__":
+            engine = VoiceVitalsFusionEngine()
+            current_user_id = "ASTRO-01"
+
+            try:
+                print(f"\nFetching medical baseline for {current_user_id}...")
+                user_baseline = load_astronaut_baseline(current_user_id)
+
+                # 1. Prompt the user to type the exact filename
+                print("\nAvailable files in folder: ", [f for f in os.listdir() if f.endswith('.wav')])
+                target_file = input("Enter the exact name of the .wav file to process (e.g., test_audio.wav): ")
+
+                # 2. Check if the file they typed actually exists
+                if not os.path.exists(target_file):
+                    print(f"\nERROR: Could not find '{target_file}' in this folder. Check your spelling!")
+                else:
+                    # 3. Process only that specific file
+                    print(f"\nProcessing {target_file}...")
+                    result_json = engine.process_daily_log(target_file, user_baseline)
+
+                    print("\n--- Output JSON Payload for Dashboard ---")
+                    print(result_json)
+
+            except Exception as e:
+                print(f"\nERROR: {e}")
