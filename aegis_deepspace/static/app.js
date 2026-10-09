@@ -3814,3 +3814,33 @@ if (document.readyState === "loading") {
 } else {
   initAegisApp();
 }
+
+// ===== HAMBURGER MENU LOGIC =====
+const overlay = document.createElement('div');
+overlay.className = 'sidebar-overlay';
+document.body.appendChild(overlay);
+
+const menuBtn = document.getElementById('menuToggleBtn');
+const sidebar = document.querySelector('.sidebar-nav');
+
+function openSidebar() {
+  sidebar.classList.add('open');
+  overlay.classList.add('open');
+  menuBtn.textContent = '✕';
+}
+
+function closeSidebar() {
+  sidebar.classList.remove('open');
+  overlay.classList.remove('open');
+  menuBtn.textContent = '☰';
+}
+
+menuBtn.addEventListener('click', () => {
+  sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+});
+
+overlay.addEventListener('click', closeSidebar);
+
+document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+  btn.addEventListener('click', closeSidebar);
+});
