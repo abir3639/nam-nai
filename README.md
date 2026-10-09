@@ -70,12 +70,29 @@ python run_demo.py --serve
 Open **[http://127.0.0.1:8000](http://127.0.0.1:8000)** in your browser.
 
 - **Mission Control Dashboard**: Four-pillar overview cards, live telemetry stream, real-time risk fusion pipeline, and flight surgeon recommendations.
+- **AG Centrifuge Simulator**: Centrifugal Ring Spin-Down & Microgravity Shock Transition Simulator (0.38g &rarr; 0.0g in 90s) with Coriolis shear, cephalad fluid shift (+850 mL/min), CVP/ICP spikes, neurovestibular dissociation / SMS index, multi-crew telemetry roster, and autonomous Level-5 intervention override.
 - **Dedicated Pillar Pages**:
   - **P1: Radiation Safe-Route**: Interactive habitat compartment exposure table, custom Dijkstra evacuation path recalculation, and DONKI space weather alert panel.
   - **P2: Voice Vitals**: Speech-to-text transcription via Whisper STT, sentiment/mood valence via DistilBERT, and acoustic fatigue/hypoxia analysis via 1D-CNN.
   - **P3: Astro-Twin**: 30-day forward BMD projection via Frost's Mechanostat ODE + Gradient Boosting residual ML model, and adaptive compensatory countermeasure prescription.
   - **P4: Decision Engine**: Mathematical fusion formulas, multi-signal synergy escalation rules, local offline NASA research evidence citations, and counterfactual What-If simulation.
+- **NASA Flight Surgeon Med-Brief (MED-B)**: One-click export of an official NASA-STD-3001 compliant Medical Event Dossier with SHA-256 telemetry integrity verification hash, multi-pillar clinical diagnostics, actuated countermeasures log, and downloadable Houston DSN debrief packet (`.md`).
 - **Toggle Blackout**: Simulate losing Earth connection (20-min Mars delay) to demonstrate autonomous edge decision support.
+- **Deep Space Communications & Federated Sync**:
+  - **3-State Comms Manager**: `ONLINE` (link active), `OFFLINE` (20-min Mars blackout), and `SYNCING` (burst store-and-forward transmission).
+  - **Persistent SQLite Store-and-Forward**: Queues health events, periodic telemetry summaries, and edge model updates locally with zero data loss across restarts.
+  - **Priority Queueing**: `CRITICAL` health events are triaged and downlinked before routine summaries and model updates.
+  - **Asymmetric Downlink Timeline**: Distinguishes onboard occurrence time vs Houston receipt time, tracking true propagation latency with SHA-256 telemetry verification.
+  - **Edge Federated Learning (FedAvg)**: 2-client simulated onboard training (CDR Mark Watney & Dr. Alex Vogel) generating parameter deltas ($\Delta W$) without transmitting sensitive raw audio or multi-omics; Houston ground aggregator validates bounds ($|\Delta w| \le 2.0$), detects stale/duplicate versions, and computes FedAvg.
+  - **1-Click E2E Mission Demo Runner**: Reproducible 12-step sequence demonstrating offline event buffering, automatic link recovery, idempotent ingestion, and model version promotion.
+- **Explainable AI Health Alerts Using SHAP (Feature B)**:
+  - **Model-Specific Shapley Attribution**:
+    - **Multimodal Crew Anomaly Scoring Model**: Exact Linear Shapley attribution ($\phi_i = w_i \cdot (x_i - \mathbb{E}[x_i])$) decomposing continuous anomaly score $f(x)$ across radiation dose rate, vocal fatigue, cognitive strain, hypoxia markers, bone loss velocity, and Coriolis shear against nominal reference baselines $\mathbb{E}[x]$.
+    - **Astro-Twin Residual Model**: `shap.TreeExplainer` wrapping the physiological `GradientBoostingRegressor` to attribute microgravity exercise deficits, bone mineral resorption, and fluid redistribution residuals.
+  - **Bidirectional Attribution Visualizer**: Displays features increasing predicted anomaly risk ($\phi_i > 0$, red) versus mitigating factors ($\phi_i < 0$, green), base expected values $\mathbb{E}[f(x)]$, and continuous Shapley efficiency verification ($\mathbb{E}[f(x)] + \sum \phi_i = f(x)$ with error $< 0.001$).
+  - **Deep-Space Store-and-Forward Compatibility**: Explanations generated offline during Deep Space Network (DSN) loss are serialized into local SQLite (`explanation_json`), remain fully inspectable by astronauts in-flight, and synchronize idempotently to Houston Ground Control upon link reconnection.
+  - **Federated Model Version Auditing**: Historical alert explanations retain their exact originating model version and weights (e.g. `v1.0.0`), preventing silent distortion when Houston promotes aggregated FedAvg models (`v1.1.0+`).
+  - **Ethical & Scientific Integrity**: Clear distinction between statistical model scores and operational risk tiers; strict non-causal attribution disclaimers ("Statistical attribution (SHAP) quantifies mathematical model influence and does not establish clinical etiology or accredited medical diagnoses").
 
 ---
 
@@ -87,15 +104,17 @@ Open **[http://127.0.0.1:8000](http://127.0.0.1:8000)** in your browser.
 4. **Combined Multimodal Anomaly**: Radiation flare + cognitive slowing + simulated exercise deficit (Synergy Escalation) $\rightarrow$ `CRITICAL` Risk (`0.99`).
 5. **Offline Blackout (Mars 20m Delay)**: Earth comms severed; 100% autonomous edge decision citing ASCEND standards $\rightarrow$ `CRITICAL` Risk (`0.99`).
 6. **Uncertain / Noisy Data**: Conflicting sensors & low SNR audio; surfaces uncertainty and requests observation $\rightarrow$ `MEDIUM` Risk (`0.40`).
+7. **Centrifugal Despin Shock**: Mechanical governor scram, 0.38g to 0.0g in 90s, Coriolis shear, CVP/ICP spikes & autonomous Level-5 triage override $\rightarrow$ `CRITICAL` Risk.
+8. **Feature B SHAP Live Scenario**: Reproducible 6-step walkthrough of nominal attribution $\rightarrow$ online SPE alert with SHAP $\rightarrow$ DSN blackout $\rightarrow$ offline hypoxia alert cached with SHAP $\rightarrow$ store-and-forward batch uplink to Houston $\rightarrow$ ground audit trail verification.
 
 ---
 
 ## Running the Automated Test Suite
 
 ```bash
-pytest aegis_deepspace/tests -v
+PYTHONPATH=. pytest aegis_deepspace/tests -v
 ```
-All 24 automated unit and integration tests verify deterministic decision rules, real Pillar 1 pathfinding, synergy scoring, and REST endpoints.
+All 75 automated unit and integration tests verify deterministic decision rules, real Pillar 1 pathfinding, synergy scoring, centrifuge dynamics, copilot clinical RAG, NASA-STD-3001 medical debrief generation, Asymmetric Federated Store-and-Forward Sync with Houston Ground Control, and Explainable AI (SHAP) attributions.
 
 ---
 
