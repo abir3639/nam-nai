@@ -212,5 +212,126 @@ def test_api_pillar3_analysis_and_simulation():
     assert "barbell_squat" in sdata["prescription"]["specific_exercise_adjustments"]
 
 
+def test_api_centrifuge_endpoints():
+    """Verify Centrifugal Ring Spin-Down simulator endpoints."""
+    # 1. GET state
+    res = client.get("/api/centrifuge/state")
+    assert res.status_code == 200
+    data = res.json()
+    assert "telemetry_deltas" in data
+    assert "acute_clinical_risks" in data
+    assert "primary_countermeasures" in data
+    assert "system_interventions" in data
+    assert "flight_surgeon_verdict" in data
+    assert len(data["crew_roster"]) == 4
+
+    # 2. POST simulate with customized parameters
+    sim_res = client.post("/api/centrifuge/simulate", json={
+        "initial_g": 0.38,
+        "target_g": 0.0,
+        "duration_seconds": 90.0,
+        "angular_deceleration_deg_s2": 2.4,
+        "crew_count": 4,
+        "strapped_at_onset": False
+    })
+    assert sim_res.status_code == 200
+    sim_data = sim_res.json()
+    assert sim_data["config"]["duration_seconds"] == 90.0
+    assert sim_data["telemetry_deltas"]["gravitational_vector"]["initial_g"] == 0.38
+    assert sim_data["telemetry_deltas"]["gravitational_vector"]["terminal_g"] == 0.0
+    assert sim_data["telemetry_deltas"]["hemodynamic_and_cranial_pressures"]["central_venous_pressure_cvp"]["acute_peak_mmhg"] >= 10.0
+    assert sim_data["telemetry_deltas"]["hemodynamic_and_cranial_pressures"]["intracranial_pressure_icp"]["transient_spike_mmhg"] >= 20.0
+    assert sim_data["telemetry_deltas"]["neurovestibular_and_kinematics"]["space_motion_sickness_sms_index"] >= 80.0
+    assert sim_data["flight_surgeon_verdict"]["alert_classification"] == "RED_CRITICAL_EMERGENCY"
+
+    # 3. POST actuate countermeasures
+    act_res = client.post("/api/centrifuge/actuate", json={
+        "lock_magnetic_deck": True,
+        "dispense_antiemetics": True,
+        "inflate_braslet_cuffs": True,
+        "eclss_strobe_suppression": True
+    })
+    assert act_res.status_code == 200
+    act_data = act_res.json()
+    assert act_data["stabilized"] is True
+    assert act_data["result"]["config"]["magnetic_deck_locked"] is True
+    assert act_data["result"]["config"]["countermeasures_active"] is True
+
+    # 4. POST inject to Decision Engine
+    inj_res = client.post("/api/centrifuge/inject")
+    assert inj_res.status_code == 200
+    inj_data = inj_res.json()
+    assert inj_data["status"] == "injected"
+    assert "decision" in inj_data
+    assert inj_data["decision"]["risk_level"] in ["HIGH", "CRITICAL"]
+
+
+def test_api_sync_endpoints():
+    """Verify all /api/sync/* endpoints operate correctly via HTTP client."""
+    # 1. Reset demo state
+    res_reset = client.post("/api/sync/demo/reset")
+    assert res_reset.status_code == 200
+    assert res_reset.json()["status"] == "reset_completed"
+
+    # 2. Check sync status
+    res_status = client.get("/api/sync/status")
+    assert res_status.status_code == 200
+    status_data = res_status.json()
+    assert status_data["comms_state"] == "ONLINE"
+    assert status_data["local_model_version"] == "v1.0.0"
+
+    # 3. Disconnect comms (OFFLINE)
+    res_comms = client.post("/api/sync/comms/state", json={"state": "OFFLINE", "reason": "Test offline"})
+    assert res_comms.status_code == 200
+    assert res_comms.json()["comms_state"] == "OFFLINE"
+
+    # 4. Trigger local edge federated training
+    res_train = client.post("/api/sync/federated/train", json={"client_target": "both", "num_samples_client1": 30, "num_samples_client2": 25})
+    assert res_train.status_code == 200
+    assert res_train.json()["updates_queued"] == 2
+
+    # 5. Check pending queue
+    res_queue = client.get("/api/sync/queue/pending")
+    assert res_queue.status_code == 200
+    q_data = res_queue.json()
+    assert len(q_data["model_updates"]) == 2
+
+    # 6. Reconnect comms (ONLINE)
+    res_online = client.post("/api/sync/comms/state", json={"state": "ONLINE", "reason": "Test reconnect"})
+    assert res_online.status_code == 200
+    assert res_online.json()["comms_state"] == "ONLINE"
+
+    # 7. Ground received models
+    res_models = client.get("/api/sync/ground/models")
+    assert res_models.status_code == 200
+    models_data = res_models.json()
+    assert models_data["latest_model"]["version"] == "v1.1.0"
+    assert models_data["latest_model"]["round"] == 1
+
+    # 8. Test /api/sync/comms/drop endpoint
+    res_drop = client.post("/api/sync/comms/drop")
+    assert res_drop.status_code == 200
+    assert res_drop.json()["comms_state"] == "OFFLINE"
+    
+    # Status endpoint reflects OFFLINE
+    res_status_off = client.get("/api/sync/status")
+    assert res_status_off.status_code == 200
+    assert res_status_off.json()["comms_state"] == "OFFLINE"
+
+    # Trigger sync while OFFLINE aborts safely
+    res_trig_off = client.post("/api/sync/trigger")
+    assert res_trig_off.status_code == 200
+    assert res_trig_off.json()["status"] == "ABORTED_OFFLINE"
+
+
+    # Restore to ONLINE
+    res_restore = client.post("/api/sync/comms/state", json={"state": "ONLINE", "reason": "Restored after drop test"})
+    assert res_restore.status_code == 200
+    assert res_restore.json()["comms_state"] == "ONLINE"
+
+    # 9. Run full demo sequence endpoint
+    res_demo = client.post("/api/sync/demo/run")
+    assert res_demo.status_code == 200
+    assert res_demo.json()["demo_status"] == "COMPLETED"
 
 

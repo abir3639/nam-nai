@@ -3,141 +3,810 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aegis-DeepSpace | Mission Control (Four-Pillar Health Architecture)</title>
-  <link rel="stylesheet" href="/static/styles.css">
+  <title>Aegis-DeepSpace | Autonomous Flight Surgeon Architecture</title>
+  <link rel="stylesheet" href="/static/styles.css?v=6.0">
+  <style>
+    /* Critical stacking context fix: Ensure top dropdowns are ALWAYS in front of all page text */
+    .mission-header {
+      position: relative !important;
+      z-index: 10000 !important;
+      background: rgba(13, 20, 36, 0.72) !important;
+      backdrop-filter: blur(24px) saturate(180%) !important;
+      -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+      border: 1px solid rgba(255, 255, 255, 0.12) !important;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.38) !important;
+    }
+    .header-controls {
+      position: relative !important;
+      z-index: 10001 !important;
+    }
+    .dropdown-wrapper {
+      position: relative !important;
+    }
+    .dropdown-wrapper.open {
+      z-index: 10002 !important;
+    }
+    .dropdown-menu {
+      z-index: 999999 !important;
+      background: rgba(9, 14, 28, 0.88) !important;
+      backdrop-filter: blur(35px) saturate(180%) !important;
+      -webkit-backdrop-filter: blur(35px) saturate(180%) !important;
+      border: 1px solid rgba(255, 255, 255, 0.2) !important;
+      box-shadow: 0 30px 80px 24px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.12), 0 0 40px rgba(56, 189, 248, 0.15) !important;
+    }
+    .dropdown-wrapper.open .dropdown-menu {
+      opacity: 1 !important;
+      visibility: visible !important;
+      pointer-events: auto !important;
+      transform: translateY(0) scale(1) !important;
+    }
+    .scenario-dropdown-menu {
+      right: 0 !important;
+      width: 380px !important;
+      max-width: 92vw !important;
+      max-height: calc(100vh - 120px) !important;
+      overflow-y: auto !important;
+    }
+    .views-dropdown-menu {
+      left: 0 !important;
+      width: 380px !important;
+      max-width: 92vw !important;
+      max-height: calc(100vh - 120px) !important;
+      overflow-y: auto !important;
+    }
+    .disclaimer-banner {
+      position: relative !important;
+      z-index: 10 !important;
+    }
+    .nav-container-bar {
+      position: relative !important;
+      z-index: 50 !important;
+    }
+    .tab-pane {
+      position: relative !important;
+      z-index: 1 !important;
+    }
+
+    /* ===============================================================
+       FLIGHT SURGEON CONSOLE: BOX & LOGO HOVER + ACTIVE STAR ANIMATION
+       =============================================================== */
+    .sidebar-menu .nav-tab-btn {
+      position: relative !important;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+      cursor: pointer !important;
+      overflow: hidden !important;
+    }
+    .sidebar-menu .nav-tab-btn:hover {
+      background: rgba(56, 189, 248, 0.14) !important;
+      color: #fff !important;
+      transform: translateX(4px) !important;
+      border-color: rgba(56, 189, 248, 0.5) !important;
+      box-shadow: 0 4px 18px rgba(56, 189, 248, 0.22), inset 0 0 12px rgba(56, 189, 248, 0.08) !important;
+    }
+    .sidebar-menu .nav-tab-btn.active {
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.22), rgba(99, 102, 241, 0.24)) !important;
+      border-color: rgba(56, 189, 248, 0.6) !important;
+      color: #fff !important;
+      font-weight: 600 !important;
+      box-shadow: 0 4px 20px rgba(56, 189, 248, 0.25), 0 0 24px rgba(56, 189, 248, 0.2), inset 0 0 12px rgba(56, 189, 248, 0.12) !important;
+      transform: translateX(4px) !important;
+    }
+    .sidebar-menu .nav-tab-btn .btn-icon {
+      display: inline-block !important;
+      font-size: 1.25rem !important;
+      line-height: 1 !important;
+      text-align: center !important;
+      transform-origin: center center !important;
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.25s ease !important;
+      will-change: transform, filter !important;
+    }
+    .sidebar-menu .nav-tab-btn:hover .btn-icon,
+    .sidebar-menu .nav-tab-btn.active:hover .btn-icon {
+      animation: logoBoxHoverWave 0.75s ease-in-out infinite alternate !important;
+      filter: drop-shadow(0 0 8px #38bdf8) drop-shadow(0 0 16px rgba(56, 189, 248, 0.8)) !important;
+    }
+    .sidebar-menu .nav-tab-btn.active .btn-icon {
+      transform: scale(1.15) !important;
+      filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.9)) drop-shadow(0 0 16px rgba(99, 102, 241, 0.6)) !important;
+      animation: activeIconStarlightFloat 2.4s ease-in-out infinite alternate !important;
+    }
+
+    /* Starlight sparkles for selected box */
+    .sidebar-menu .nav-tab-btn .tab-star-particle {
+      position: absolute;
+      pointer-events: none;
+      line-height: 1;
+      user-select: none;
+      display: none;
+      z-index: 2;
+    }
+    .sidebar-menu .nav-tab-btn.active .tab-star-particle {
+      display: inline-block !important;
+    }
+    .sidebar-menu .nav-tab-btn.active .star-1 {
+      top: 4px;
+      right: 18px;
+      font-size: 0.75rem;
+      color: #7dd3fc;
+      animation: starTwinklePulse 1.8s ease-in-out infinite 0.1s !important;
+    }
+    .sidebar-menu .nav-tab-btn.active .star-2 {
+      bottom: 5px;
+      left: 28px;
+      font-size: 0.6rem;
+      color: #38bdf8;
+      animation: starTwinklePulse 2.2s ease-in-out infinite 0.5s !important;
+    }
+    .sidebar-menu .nav-tab-btn.active .star-3 {
+      top: 9px;
+      left: 6px;
+      font-size: 0.5rem;
+      color: #bae6fd;
+      animation: starTwinklePulse 1.6s ease-in-out infinite 0.9s !important;
+    }
+    .sidebar-menu .nav-tab-btn.active .star-4 {
+      bottom: 6px;
+      right: 8px;
+      font-size: 0.65rem;
+      color: #60a5fa;
+      animation: starTwinklePulse 2.0s ease-in-out infinite 1.3s !important;
+    }
+
+    /* Sweeping starlight shimmer across selected box */
+    .sidebar-menu .nav-tab-btn.active::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -60%;
+      width: 40%;
+      height: 200%;
+      background: linear-gradient(
+        60deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.04) 30%,
+        rgba(56, 189, 248, 0.22) 50%,
+        rgba(255, 255, 255, 0.12) 65%,
+        transparent 100%
+      );
+      transform: rotate(25deg);
+      pointer-events: none;
+      animation: starSweepShimmer 3.2s cubic-bezier(0.4, 0, 0.2, 1) infinite !important;
+      z-index: 1;
+    }
+
+    @keyframes starTwinklePulse {
+      0% {
+        opacity: 0.15;
+        transform: scale(0.6) rotate(0deg);
+        filter: drop-shadow(0 0 2px #38bdf8);
+      }
+      50% {
+        opacity: 1;
+        transform: scale(1.35) rotate(90deg);
+        filter: drop-shadow(0 0 8px #7dd3fc) drop-shadow(0 0 14px rgba(56, 189, 248, 0.9));
+      }
+      100% {
+        opacity: 0.15;
+        transform: scale(0.7) rotate(180deg);
+        filter: drop-shadow(0 0 3px #38bdf8);
+      }
+    }
+
+    @keyframes starSweepShimmer {
+      0% { left: -70%; opacity: 0; }
+      15% { opacity: 1; }
+      60% { left: 140%; opacity: 1; }
+      100% { left: 140%; opacity: 0; }
+    }
+
+    @keyframes activeIconStarlightFloat {
+      0% {
+        transform: scale(1.12) rotate(0deg) translateY(0);
+        filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.75));
+      }
+      50% {
+        transform: scale(1.22) rotate(4deg) translateY(-2px);
+        filter: drop-shadow(0 0 12px #38bdf8) drop-shadow(0 0 20px rgba(56, 189, 248, 0.9));
+      }
+      100% {
+        transform: scale(1.14) rotate(-3deg) translateY(1px);
+        filter: drop-shadow(0 0 8px rgba(125, 211, 252, 0.8));
+      }
+    }
+
+    @keyframes logoBoxHoverWave {
+      0% {
+        transform: scale(1.15) rotate(-6deg) translateY(0);
+      }
+      50% {
+        transform: scale(1.35) rotate(8deg) translateY(-4px);
+      }
+      100% {
+        transform: scale(1.22) rotate(-8deg) translateY(-2px);
+      }
+    }
+  </style>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
   <div class="app-container">
     <!-- TOP HEADER -->
     <header class="mission-header">
       <div class="logo-area">
-        <div class="mission-crest">AEGIS</div>
+        <!-- Light animated deep-space orbital beacon graphic -->
+        <div class="header-animated-beacon" title="Deep-Space Autonomous Flight Surgeon Telemetry Active">
+          <svg class="beacon-orbit-svg" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <radialGradient id="beaconCoreGradient" cx="35%" cy="35%" r="65%">
+                <stop offset="0%" stop-color="#38bdf8" />
+                <stop offset="55%" stop-color="#2563eb" />
+                <stop offset="100%" stop-color="#0f172a" />
+              </radialGradient>
+            </defs>
+            <circle cx="24" cy="24" r="22" class="beacon-ambient-pulse" />
+            <circle cx="24" cy="24" r="16" class="beacon-ping wave-1" />
+            <circle cx="24" cy="24" r="11" class="beacon-ping wave-2" />
+            <ellipse cx="24" cy="24" rx="20" ry="7" transform="rotate(-25 24 24)" class="beacon-orbit-ring" />
+            <g class="beacon-rotating-orbit">
+              <circle cx="42" cy="16" r="2.5" class="beacon-satellite-dot" />
+              <circle cx="42" cy="16" r="4.5" class="beacon-satellite-halo" />
+            </g>
+            <circle cx="24" cy="24" r="6.5" class="beacon-core-orb" />
+            <line x1="24" y1="12" x2="24" y2="15" class="beacon-crosshair" />
+            <line x1="24" y1="33" x2="24" y2="36" class="beacon-crosshair" />
+            <line x1="12" y1="24" x2="15" y2="24" class="beacon-crosshair" />
+            <line x1="33" y1="24" x2="36" y2="24" class="beacon-crosshair" />
+          </svg>
+        </div>
+        <div class="mission-crest">
+          <svg class="crest-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/>
+            <path d="M12 8v8m-4-4h8" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <span class="crest-text">AEGIS</span>
+        </div>
         <div class="mission-title">
-          <h1>AEGIS-DEEPSPACE</h1>
-          <p class="subtitle">Autonomous AI Flight Surgeon & Multimodal Health Architecture</p>
+          <h1>Aegis-DeepSpace</h1>
+          <p class="subtitle">Autonomous AI Flight Surgeon</p>
         </div>
       </div>
 
       <div class="header-controls">
-        <div class="status-indicator" id="commsBadge">
-          <span class="status-dot online"></span>
-          <span class="status-text" id="commsStatusText">ONLINE [EARTH LINK ACTIVE]</span>
+        <!-- Interactive Scenario Dropdown Trigger -->
+        <div class="dropdown-wrapper" id="scenarioDropdownWrapper">
+          <button class="dropdown-trigger scenario-trigger-btn" id="scenarioDropdownBtn" aria-haspopup="true" aria-expanded="false" title="Switch Mission Simulation Scenario">
+            <span class="trigger-dot" id="scenarioActiveDot"></span>
+            <div class="trigger-label-group">
+              <span class="trigger-eyebrow">SIMULATION SCENARIO</span>
+              <span class="trigger-title" id="scenarioActiveTitle">1. Nominal Baseline</span>
+            </div>
+            <svg class="dropdown-chevron" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </button>
+
+          <!-- Animated Dropdown Panel for Scenarios -->
+          <div class="dropdown-menu scenario-dropdown-menu" id="scenarioDropdownMenu" role="menu">
+            <div class="dropdown-menu-header">
+              <span class="dm-title">Mission Simulation Scenarios</span>
+              <span class="dm-badge">Fault Injection</span>
+            </div>
+            <div class="scenario-list-group" id="scenarioBtnGroup">
+              <button class="scenario-btn active" data-scenario="normal" role="menuitem">
+                <span class="scen-icon scen-nominal">🟢</span>
+                <div class="scen-text">
+                  <div class="scen-heading">1. Nominal Baseline</div>
+                  <div class="scen-desc">Standard mission baseline &bull; All vitals &amp; SEP telemetry nominal</div>
+                </div>
+                <span class="scen-check-mark">✓</span>
+              </button>
+              <button class="scenario-btn" data-scenario="solar_storm" role="menuitem">
+                <span class="scen-icon scen-storm">🔴</span>
+                <div class="scen-text">
+                  <div class="scen-heading">2. Solar Storm (SPE)</div>
+                  <div class="scen-desc">CME radiation surge &bull; Dijkstra minimum-dose shelter evacuation</div>
+                </div>
+                <span class="scen-check-mark">✓</span>
+              </button>
+              <button class="scenario-btn" data-scenario="voice_anomaly" role="menuitem">
+                <span class="scen-icon scen-voice">🟠</span>
+                <div class="scen-text">
+                  <div class="scen-heading">3. Voice Anomaly</div>
+                  <div class="scen-desc">Elevated cognitive strain &bull; Acoustic fatigue &amp; hypoxia indicators</div>
+                </div>
+                <span class="scen-check-mark">✓</span>
+              </button>
+              <button class="scenario-btn" data-scenario="combined_anomaly" role="menuitem">
+                <span class="scen-icon scen-combined">🟣</span>
+                <div class="scen-text">
+                  <div class="scen-heading">4. Combined Anomaly</div>
+                  <div class="scen-desc">Multimodal radiation event &bull; Acute crew fatigue cascade</div>
+                </div>
+                <span class="scen-check-mark">✓</span>
+              </button>
+              <button class="scenario-btn" data-scenario="offline_blackout" role="menuitem">
+                <span class="scen-icon scen-blackout">⚪</span>
+                <div class="scen-text">
+                  <div class="scen-heading">5. Offline Blackout</div>
+                  <div class="scen-desc">20-min Mars comms latency &bull; Autonomous flight surgeon copilot</div>
+                </div>
+                <span class="scen-check-mark">✓</span>
+              </button>
+              <button class="scenario-btn" data-scenario="uncertain_data" role="menuitem">
+                <span class="scen-icon scen-uncertain">🟡</span>
+                <div class="scen-text">
+                  <div class="scen-heading">6. Uncertain Data</div>
+                  <div class="scen-desc">Degraded telemetry SNR &bull; Probabilistic clinical fallback bounds</div>
+                </div>
+                <span class="scen-check-mark">✓</span>
+              </button>
+              <button class="scenario-btn" data-scenario="centrifuge_despin" role="menuitem">
+                <span class="scen-icon scen-storm">🌀</span>
+                <div class="scen-text">
+                  <div class="scen-heading">7. Centrifugal Despin Shock</div>
+                  <div class="scen-desc">0.38g &rarr; 0g microgravity transition &bull; Coriolis shear &amp; CVP/ICP spikes</div>
+                </div>
+                <span class="scen-check-mark">✓</span>
+              </button>
+            </div>
+          </div>
         </div>
-        <button id="toggleCommsBtn" class="btn btn-outline" title="Simulate 20-min communication blackout">
-          ⚡ TOGGLE BLACKOUT
-        </button>
-        <div class="telemetry-age">
-          <span class="label">DATA AGE:</span>
-          <span id="dataFreshness" class="val">5s</span>
+
+        <!-- Comms status & blackout toggle -->
+        <div class="header-action-group">
+          <div class="status-indicator" id="commsBadge">
+            <span class="status-dot online"></span>
+            <span class="status-text" id="commsStatusText">ONLINE [EARTH LINK ACTIVE]</span>
+          </div>
+          <button id="toggleCommsBtn" type="button" class="btn btn-outline" title="Simulate 20-min communication blackout">
+            ⚡ Toggle Blackout
+          </button>
+          <button id="openMedBriefBtn" type="button" onclick="window.openMedBriefModal &amp;&amp; window.openMedBriefModal(event)" class="btn btn-outline" style="border-color: rgba(56, 189, 248, 0.45); color: #38bdf8; background: rgba(56, 189, 248, 0.08);" title="Generate official NASA-STD-3001 Flight Surgeon Medical Event Dossier">
+            📋 NASA Med-Brief
+          </button>
+          <button id="openSystemInfoBtn" type="button" onclick="window.openSystemInfoModal &amp;&amp; window.openSystemInfoModal(event)" class="btn btn-outline" style="border-color: rgba(52, 211, 153, 0.45); color: #34d399; background: rgba(52, 211, 153, 0.08);" title="View Aegis-DeepSpace System Architecture &amp; Website Information">
+            ℹ️ System Info
+          </button>
+          <div class="telemetry-age">
+            <span class="label">AGE:</span>
+            <span id="dataFreshness" class="val">5s</span>
+          </div>
         </div>
       </div>
     </header>
 
-    <!-- DISCLAIMER & IMPLEMENTATION STATUS BANNER -->
+    <!-- DISCLAIMER & STATUS BANNER -->
     <div class="disclaimer-banner">
-      ⚠️ <strong>RESEARCH PROTOTYPE:</strong> Clinical decision support system for Mars-forward analog missions.
-      <span class="real-pill">P1: REAL IMPLEMENTATION</span> Live Dijkstra pathfinding & NASA DONKI/SEP telemetry.
-      <span class="real-pill">P2: REAL IMPLEMENTATION</span> Live Whisper STT, DistilBERT Sentiment & MFCC-CNN Vitals.
-      <span class="real-pill">P3: REAL IMPLEMENTATION</span> Mechanostat ODE & Scikit-Learn GBM Residual Twin.
-      <span class="real-pill">P4: REAL DECISION ENGINE</span> Multimodal risk fusion & offline local RAG evidence.
+      <div class="disclaimer-left">
+        <span class="status-live-dot"></span>
+        <span class="disclaimer-title">Autonomous Clinical Decision Support System</span>
+        <span class="disclaimer-sep">&bull;</span>
+        <span class="disclaimer-desc">Deep-space exploration health architecture synthesizing radiation safe-routing, acoustic vitals, and physiological twin forecasting.</span>
+      </div>
+      <div class="banner-pills">
+        <span class="real-pill">Dijkstra Safe-Route</span>
+        <span class="real-pill">Acoustic Biometrics</span>
+        <span class="real-pill">Physiological Twin</span>
+        <span class="real-pill">Decision Engine</span>
+        <span class="real-pill">Centrifuge Sim</span>
+        <span class="real-pill" style="border-color: rgba(56, 189, 248, 0.45); color: #38bdf8;">AI Copilot</span>
+      </div>
     </div>
 
-    <!-- 4-PILLAR SYSTEM NAVIGATION BAR -->
-    <nav class="system-nav-bar" id="mainNavBar">
-      <button class="nav-tab-btn active" data-tab="tab-mission-control">
-        🌐 Mission Control Dashboard
-      </button>
-      <button class="nav-tab-btn" data-tab="tab-pillar1">
-        🛡️ P1: Radiation Safe-Route <span class="nav-badge real">REAL</span>
-      </button>
-      <button class="nav-tab-btn" data-tab="tab-pillar2">
-        🎙️ P2: Voice Vitals <span class="nav-badge real">REAL</span>
-      </button>
-      <button class="nav-tab-btn" data-tab="tab-pillar3">
-        🧬 P3: Astro-Twin <span class="nav-badge real">REAL</span>
-      </button>
-      <button class="nav-tab-btn" data-tab="tab-pillar4">
-        🧠 P4: Decision Engine <span class="nav-badge real">REAL</span>
-      </button>
-    </nav>
+    <!-- REAL-TIME COMMUNICATION BLACKOUT MARS DELAY BANNER -->
+    <div id="blackoutAlertBanner" class="blackout-active-banner" style="display: none;">
+      <span class="pulse-blackout-beacon">⚡</span>
+      <span class="blackout-banner-text"><strong>20-MINUTE EARTH COMMUNICATION BLACKOUT ACTIVE:</strong> Interplanetary radio link severed &bull; Autonomous Flight Surgeon operating with Level-5 Edge Authority (NASA-STD-3001 &bull; ASCEND doctrine).</span>
+      <button class="blackout-restore-inline-btn" id="restoreCommsInlineBtn" type="button">Restore Earth Link</button>
+    </div>
 
-    <!-- SCENARIO SWITCHER -->
-    <section class="scenario-panel">
-      <div class="panel-header">
-        <span class="section-tag">SIMULATION SUITE</span>
-        <h2>DEMO SCENARIOS <span class="mock-tag">TEST SUITE & FAULT INJECTION</span></h2>
-      </div>
-      <div class="scenario-buttons" id="scenarioBtnGroup">
-        <button class="scenario-btn active" data-scenario="normal">1. Nominal Baseline</button>
-        <button class="scenario-btn" data-scenario="solar_storm">2. Solar Storm (SPE)</button>
-        <button class="scenario-btn" data-scenario="voice_anomaly">3. Voice Anomaly</button>
-        <button class="scenario-btn" data-scenario="combined_anomaly">4. Combined Anomaly</button>
-        <button class="scenario-btn" data-scenario="offline_blackout">5. Offline Blackout</button>
-        <button class="scenario-btn" data-scenario="uncertain_data">6. Uncertain Data</button>
-      </div>
-    </section>
+    <!-- WORKSPACE TWO-COLUMN LAYOUT (LEFT SIDEBAR + MAIN CONTENT VIEWPORT) -->
+    <div class="workspace-layout">
+      <!-- LEFT SIDEBAR NAVIGATION -->
+      <aside class="sidebar-nav">
+        <div class="sidebar-label">FLIGHT SURGEON CONSOLE</div>
+        <nav class="sidebar-menu" id="mainNavBar">
+          <button class="nav-tab-btn active" data-tab="tab-mission-control">
+            <span class="btn-icon">🌐</span>
+            <span class="btn-text">Mission Control</span>
+            <span class="tab-star-particle star-1">✦</span>
+            <span class="tab-star-particle star-2">✨</span>
+            <span class="tab-star-particle star-3">⋆</span>
+            <span class="tab-star-particle star-4">✦</span>
+          </button>
+          <button class="nav-tab-btn" data-tab="tab-pillar1">
+            <span class="btn-icon">🛡️</span>
+            <span class="btn-text">Radiation Safe-Route</span>
+            <span class="tab-star-particle star-1">✦</span>
+            <span class="tab-star-particle star-2">✨</span>
+            <span class="tab-star-particle star-3">⋆</span>
+            <span class="tab-star-particle star-4">✦</span>
+          </button>
+          <button class="nav-tab-btn" data-tab="tab-pillar2">
+            <span class="btn-icon">🎙️</span>
+            <span class="btn-text">Voice Vitals</span>
+            <span class="tab-star-particle star-1">✦</span>
+            <span class="tab-star-particle star-2">✨</span>
+            <span class="tab-star-particle star-3">⋆</span>
+            <span class="tab-star-particle star-4">✦</span>
+          </button>
+          <button class="nav-tab-btn" data-tab="tab-pillar3">
+            <span class="btn-icon">🧬</span>
+            <span class="btn-text">Astro-Twin</span>
+            <span class="tab-star-particle star-1">✦</span>
+            <span class="tab-star-particle star-2">✨</span>
+            <span class="tab-star-particle star-3">⋆</span>
+            <span class="tab-star-particle star-4">✦</span>
+          </button>
+          <button class="nav-tab-btn" data-tab="tab-pillar4">
+            <span class="btn-icon">🧠</span>
+            <span class="btn-text">Decision Engine</span>
+            <span class="tab-star-particle star-1">✦</span>
+            <span class="tab-star-particle star-2">✨</span>
+            <span class="tab-star-particle star-3">⋆</span>
+            <span class="tab-star-particle star-4">✦</span>
+          </button>
+          <button class="nav-tab-btn" data-tab="tab-centrifuge">
+            <span class="btn-icon">🌀</span>
+            <span class="btn-text">Centrifuge Sim</span>
+            <span class="tab-star-particle star-1">✦</span>
+            <span class="tab-star-particle star-2">✨</span>
+            <span class="tab-star-particle star-3">⋆</span>
+            <span class="tab-star-particle star-4">✦</span>
+          </button>
+          <button class="nav-tab-btn" data-tab="tab-copilot">
+            <span class="btn-icon">🩺</span>
+            <span class="btn-text">AI Copilot Chat</span>
+            <span class="sidebar-tab-badge badge-ai">AI</span>
+            <span class="tab-star-particle star-1">✦</span>
+            <span class="tab-star-particle star-2">✨</span>
+            <span class="tab-star-particle star-3">⋆</span>
+            <span class="tab-star-particle star-4">✦</span>
+          </button>
+          <button class="nav-tab-btn" data-tab="tab-sync">
+            <span class="btn-icon">📡</span>
+            <span class="btn-text">Federated Sync</span>
+            <span id="sidebarSyncBadge" class="sidebar-tab-badge badge-sync">ONLINE</span>
+            <span class="tab-star-particle star-1">✦</span>
+            <span class="tab-star-particle star-2">✨</span>
+            <span class="tab-star-particle star-3">⋆</span>
+            <span class="tab-star-particle star-4">✦</span>
+          </button>
+          <button class="nav-tab-btn" data-tab="tab-xai" title="Explainable AI (SHAP) • Feature Attribution">
+            <span class="btn-icon">🔬</span>
+            <span class="btn-text">Explainable AI</span>
+            <span class="sidebar-tab-badge badge-xai">XAI</span>
+            <span class="tab-star-particle star-1">✦</span>
+            <span class="tab-star-particle star-2">✨</span>
+            <span class="tab-star-particle star-3">⋆</span>
+            <span class="tab-star-particle star-4">✦</span>
+          </button>
+          <button class="nav-tab-btn" id="sidebarInfoBtn" type="button" onclick="window.openSystemInfoModal && window.openSystemInfoModal(event)" style="border-color: rgba(52, 211, 153, 0.3); color: #34d399;">
+            <span class="btn-icon">ℹ️</span>
+            <span class="btn-text">Website &amp; Info</span>
+            <span class="tab-star-particle star-1">✦</span>
+            <span class="tab-star-particle star-2">✨</span>
+            <span class="tab-star-particle star-3">⋆</span>
+            <span class="tab-star-particle star-4">✦</span>
+          </button>
+        </nav>
 
-    <!-- ===================================================================
-         TAB 1: MISSION CONTROL LANDING / DASHBOARD (FOUR-PILLAR FUSION)
-         =================================================================== -->
-    <div class="tab-pane active" id="tab-mission-control">
+        <div class="sidebar-system-summary">
+          <div class="sss-title">SYSTEM STATUS</div>
+          <div class="sss-item">
+            <span class="sss-dot"></span>
+            <span>Clinical Pipeline: Active</span>
+          </div>
+          <div class="sss-item">
+            <span class="sss-dot"></span>
+            <span>NASA Standards: Local</span>
+          </div>
+          <div class="sss-item">
+            <span class="sss-dot"></span>
+            <span>Edge Autonomy: 100%</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- MAIN CONTENT VIEWPORT -->
+      <main class="main-content-viewport">
+        <!-- ===================================================================
+             TAB 1: MISSION CONTROL LANDING / DASHBOARD
+             =================================================================== -->
+        <div class="tab-pane active" id="tab-mission-control">
       <!-- 4-PILLAR HIGH-LEVEL STATUS STRIP -->
       <section class="system-status-strip">
-        <!-- P1 Box -->
-        <div class="pillar-summary-card real-impl">
+        <!-- Radiation Defense Box -->
+        <div class="pillar-summary-card">
           <div class="psc-header">
-            <span class="psc-num">P1 &bull; REAL</span>
+            <span class="psc-num">Radiation Defense</span>
             <span class="badge" id="stripRadBadge">LOW</span>
           </div>
           <div class="psc-name">Radiation Safe-Route</div>
           <div class="psc-status" id="stripRadSummary">Flux: <strong>0.02 mSv/h</strong> | Shelter: <strong>Module B</strong></div>
           <div class="psc-footer">
             <span>Graph Dijkstra + DONKI</span>
-            <button class="link-btn" data-switch-tab="tab-pillar1">Open Pillar 1 &rarr;</button>
+            <button class="link-btn" data-switch-tab="tab-pillar1">Open Safe-Route &rarr;</button>
           </div>
         </div>
 
-        <!-- P2 Box -->
-        <div class="pillar-summary-card real-impl">
+        <!-- Acoustic Biometrics Box -->
+        <div class="pillar-summary-card">
           <div class="psc-header">
-            <span class="psc-num">P2 &bull; REAL</span>
+            <span class="psc-num">Acoustic Biometrics</span>
             <span class="badge" id="stripVoiceBadge">NOMINAL</span>
           </div>
           <div class="psc-name">Voice Vitals</div>
           <div class="psc-status" id="stripVoiceSummary">Strain: <strong>0.12</strong> | Fatigue: <strong>0.10</strong></div>
           <div class="psc-footer">
             <span>Whisper + CNN + DistilBERT</span>
-            <button class="link-btn" data-switch-tab="tab-pillar2">Open Pillar 2 &rarr;</button>
+            <button class="link-btn" data-switch-tab="tab-pillar2">Open Voice Vitals &rarr;</button>
           </div>
         </div>
 
-        <!-- P3 Box -->
-        <div class="pillar-summary-card real-impl">
+        <!-- Physiological Twin Box -->
+        <div class="pillar-summary-card">
           <div class="psc-header">
-            <span class="psc-num">P3 &bull; REAL</span>
+            <span class="psc-num">Physiological Twin</span>
             <span class="badge" id="stripTwinBadge">NOMINAL</span>
           </div>
           <div class="psc-name">Astro-Twin</div>
           <div class="psc-status" id="stripTwinSummary">Bone: <strong>-0.8%/mo</strong> | Deficit: <strong>0d</strong></div>
           <div class="psc-footer">
-            <span>Physiological Twin</span>
-            <button class="link-btn" data-switch-tab="tab-pillar3">Open Pillar 3 &rarr;</button>
+            <span>Mechanostat ODE + GBM</span>
+            <button class="link-btn" data-switch-tab="tab-pillar3">Open Astro-Twin &rarr;</button>
           </div>
         </div>
 
-        <!-- P4 Box -->
-        <div class="pillar-summary-card real-impl">
+        <!-- Decision Engine Box -->
+        <div class="pillar-summary-card">
           <div class="psc-header">
-            <span class="psc-num">P4 &bull; REAL</span>
+            <span class="psc-num">Decision Engine</span>
             <span class="badge" id="stripDecisionBadge">LOW RISK</span>
           </div>
           <div class="psc-name">Autonomous Engine</div>
           <div class="psc-status" id="stripDecisionSummary">Fused Score: <strong id="stripScoreNum">0.10</strong> / 1.00</div>
           <div class="psc-footer">
             <span>Offline Fusion Copilot</span>
-            <button class="link-btn" data-switch-tab="tab-pillar4">Open Pillar 4 &rarr;</button>
+            <button class="link-btn" data-switch-tab="tab-pillar4">Open Decision Engine &rarr;</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           INTERACTIVE FLIGHT SURGEON SIMULATOR & COMPOUND STRESS-TEST
+           =================================================================== -->
+      <section class="card simulator-card" id="flightSurgeonSimulator">
+        <div class="card-header simulator-header">
+          <div class="sim-header-left">
+            <div class="sim-title-group">
+              <span class="sim-icon-pulse">🎮</span>
+              <div>
+                <h3>Interactive Flight Surgeon Simulator</h3>
+                <p class="sim-subtitle">Compound Stress-Test &bull; Real-time multimodal parameter perturbation &amp; autonomous clinical decision synthesis</p>
+              </div>
+            </div>
+          </div>
+          <div class="sim-header-right">
+            <span class="sim-status-chip" id="simLiveBadge">LIVE INFERENCE ACTIVE</span>
+            <button class="btn btn-outline" id="simToggleViewBtn" title="Toggle Compact / Expanded View">
+              📐 Minimize View
+            </button>
+          </div>
+        </div>
+
+        <div class="card-body simulator-body" id="simulatorBodyContainer">
+          <!-- Preset Scenarios (Judge Quick-Select) -->
+          <div class="sim-presets-bar">
+            <span class="presets-label">QUICK DEMO PRESETS:</span>
+            <div class="presets-buttons-group">
+              <button class="preset-btn active" data-preset="nominal">
+                <span>🟢</span> 1. Nominal Flight
+              </button>
+              <button class="preset-btn" data-preset="solar_storm">
+                <span>☀️</span> 2. Solar Storm SPE (350 mSv/h)
+              </button>
+              <button class="preset-btn" data-preset="hypoxia">
+                <span>🎙️</span> 3. Crew Hypoxia &amp; Strain
+              </button>
+              <button class="preset-btn" data-preset="gym_failure">
+                <span>🏋️</span> 4. ARED Gym Failure (8d Outage)
+              </button>
+              <button class="preset-btn" data-preset="compound_crisis">
+                <span>🚨</span> 5. Compound Crisis (Multi-Domain Synergy)
+              </button>
+            </div>
+          </div>
+
+          <!-- Simulator Main Grid: Left Controls (Sliders) & Right Feedback (Gauge + Breakdown) -->
+          <div class="sim-main-grid">
+            <!-- Left: Interactive Knobs & Sliders -->
+            <div class="sim-controls-panel">
+              <div class="sim-panel-title">
+                <span>🎛️ INGESTION PARAMETERS</span>
+                <span class="sim-hint">Drag sliders to test AI response</span>
+              </div>
+
+              <!-- Flux & Module -->
+              <div class="sim-control-box">
+                <div class="sim-ctrl-header">
+                  <label for="simFluxSlider">External Radiation Flux:</label>
+                  <span class="slider-val-bubble" id="simFluxValDisplay">5.0 mSv/h</span>
+                </div>
+                <input type="range" id="simFluxSlider" class="sim-slider" min="0" max="600" step="5" value="5">
+                <div class="slider-scale-ticks">
+                  <span>0 (GCR Quiet)</span>
+                  <span>150 (Moderate)</span>
+                  <span>350 (Severe SPE)</span>
+                  <span>600 (Extreme CME)</span>
+                </div>
+              </div>
+
+              <div class="sim-two-cols">
+                <div class="sim-control-box">
+                  <label for="simModuleSelect">Astronaut Compartment:</label>
+                  <select id="simModuleSelect" class="select-input sim-select">
+                    <option value="Module A" selected>Module A: Command Deck (20% Shielded)</option>
+                    <option value="Module D">Module D: Airlock / EVA Bay (10% Shielded)</option>
+                    <option value="Module C">Module C: Science Lab (60% Shielded)</option>
+                    <option value="Module B">Module B: Water Storm Shelter (95% Shielded)</option>
+                  </select>
+                </div>
+
+                <div class="sim-control-box">
+                  <label for="simCommsSelect">Earth Communication Link:</label>
+                  <select id="simCommsSelect" class="select-input sim-select">
+                    <option value="ONLINE" selected>ONLINE (Direct Earth DSN Link)</option>
+                    <option value="OFFLINE">OFFLINE (20-min Mars Delay Mode)</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Cognitive Strain & Hypoxia -->
+              <div class="sim-two-cols">
+                <div class="sim-control-box">
+                  <div class="sim-ctrl-header">
+                    <label for="simStrainSlider">Cognitive Strain:</label>
+                    <span class="slider-val-bubble" id="simStrainValDisplay">0.12</span>
+                  </div>
+                  <input type="range" id="simStrainSlider" class="sim-slider" min="0" max="1" step="0.02" value="0.12">
+                  <div class="slider-scale-ticks">
+                    <span>0.0 (Rested)</span>
+                    <span>0.5 (Elevated)</span>
+                    <span>1.0 (Exhausted)</span>
+                  </div>
+                </div>
+
+                <div class="sim-control-box">
+                  <div class="sim-ctrl-header">
+                    <label for="simHypoxiaSlider">Hypoxia Marker:</label>
+                    <span class="slider-val-bubble" id="simHypoxiaValDisplay">0.04</span>
+                  </div>
+                  <input type="range" id="simHypoxiaSlider" class="sim-slider" min="0" max="0.8" step="0.02" value="0.04">
+                  <div class="slider-scale-ticks">
+                    <span>0.0 (Nominal O₂)</span>
+                    <span>0.4 (Mild)</span>
+                    <span>0.8 (Severe)</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Exercise Deficit -->
+              <div class="sim-control-box">
+                <div class="sim-ctrl-header">
+                  <label for="simDeficitSlider">ARED Exercise Outage / Confinement:</label>
+                  <span class="slider-val-bubble" id="simDeficitValDisplay">0 days</span>
+                </div>
+                <input type="range" id="simDeficitSlider" class="sim-slider" min="0" max="14" step="1" value="0">
+                <div class="slider-scale-ticks">
+                  <span>0d (Full Adherence)</span>
+                  <span>4d (Deficit)</span>
+                  <span>8d (Atrophy Risk)</span>
+                  <span>14d (Critical)</span>
+                </div>
+              </div>
+
+              <div class="sim-actions-strip">
+                <button class="btn btn-outline" id="simResetBtn">
+                  🔄 Reset Parameters
+                </button>
+                <button class="btn" id="simSyncDashboardBtn" style="background: linear-gradient(135deg, var(--accent-blue), var(--accent-indigo)); color: #fff;">
+                  ⚡ Sync to Full Dashboard Telemetry
+                </button>
+              </div>
+            </div>
+
+            <!-- Right: Real-time Live Decision Engine Response -->
+            <div class="sim-results-panel">
+              <div class="sim-panel-title">
+                <span>🧠 AI CLINICAL SYNTHESIS</span>
+                <span class="sim-formula-tag" id="simFormulaText">0.10 (Base) = 0.10</span>
+              </div>
+
+              <!-- Visual Arc Meter & Level -->
+              <div class="sim-gauge-container">
+                <div class="sim-meter-card">
+                  <div class="sim-meter-visual">
+                    <svg class="sim-circular-meter" viewBox="0 0 100 60">
+                      <path class="meter-bg" d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="8" stroke-linecap="round"/>
+                      <path class="meter-bar" id="simMeterArc" d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="var(--accent-green)" stroke-width="8" stroke-dasharray="126" stroke-dashoffset="113" stroke-linecap="round"/>
+                    </svg>
+                    <div class="meter-center-text">
+                      <span class="meter-score-num" id="simMeterScore">0.10</span>
+                      <span class="meter-score-denom">/ 1.00</span>
+                    </div>
+                  </div>
+                  <div class="sim-level-badge badge-low" id="simRiskLevelBadge">
+                    LOW RISK (NOMINAL)
+                  </div>
+                </div>
+
+                <!-- Synergy Notification Box (Dynamic) -->
+                <div class="sim-synergy-banner" id="simSynergyBanner">
+                  <span class="synergy-icon">⚡</span>
+                  <div class="synergy-content">
+                    <strong id="simSynergyTitle">No Multi-Signal Escalation</strong>
+                    <p id="simSynergyDesc">Telemetry parameters within non-compounding operational thresholds.</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Live Physical Impact Grid -->
+              <div class="sim-impact-grid">
+                <!-- Radiation Impact -->
+                <div class="sim-impact-card">
+                  <div class="sic-header">
+                    <span class="sic-tag">RADIATION DEFENSE</span>
+                    <strong id="simInternalDoseText">4.0 mSv/h</strong>
+                  </div>
+                  <div class="sic-body">
+                    <div class="sic-line">Shielding: <span id="simShieldPct">20%</span></div>
+                    <div class="sic-line">Safe Corridor: <span id="simDijkstraRoute">Module A ➔ Module B</span></div>
+                    <div class="sic-line">Transit Dose: <span id="simTransitDose">0.12 mSv</span></div>
+                  </div>
+                </div>
+
+                <!-- Voice Impact -->
+                <div class="sim-impact-card">
+                  <div class="sic-header">
+                    <span class="sic-tag">VOICE VITALS</span>
+                    <strong id="simVoiceDevText">+0.3σ</strong>
+                  </div>
+                  <div class="sic-body">
+                    <div class="sic-line">Strain: <span id="simStrainText">0.12 (Nominal)</span></div>
+                    <div class="sic-line">Hypoxia: <span id="simHypoxiaText">0.04 (Clear)</span></div>
+                    <div class="sic-line">Status: <span id="simVoiceStatusText">Within Tolerance</span></div>
+                  </div>
+                </div>
+
+                <!-- Twin Impact -->
+                <div class="sim-impact-card">
+                  <div class="sic-header">
+                    <span class="sic-tag">ASTRO-TWIN</span>
+                    <strong id="simBoneLossText">-0.8%/mo</strong>
+                  </div>
+                  <div class="sic-body">
+                    <div class="sic-line">Muscle Decline: <span id="simMuscleAtrophyText">-1.5%</span></div>
+                    <div class="sic-line">Gym Deficit: <span id="simDeficitDaysText">0 days</span></div>
+                    <div class="sic-line">Prescription: <span id="simCountermeasureStatus">Nominal Adherence</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Live Clinical Directive Callout -->
+              <div class="sim-directive-box">
+                <span class="directive-tag">AUTONOMOUS CLINICAL DIRECTIVE:</span>
+                <p class="directive-text" id="simDirectiveText">
+                  CONTINUE NOMINAL OPERATIONS: All vital metrics nominal. Maintain routine 24-hour passive monitoring cycle.
+                </p>
+                <div class="directive-contingency">
+                  <span>Contingency: </span>
+                  <strong id="simContingencyText">No corrective intervention required.</strong>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -151,14 +820,14 @@
             <h2>MULTIMODAL SENSORY STREAM</h2>
           </div>
 
-          <!-- PILLAR 1: RADIATION SAFE-ROUTE (REAL IMPLEMENTATION) -->
+          <!-- RADIATION SAFE-ROUTE -->
           <div class="card pillar-card" id="cardPillar1">
             <div class="card-header">
               <div class="pillar-label">
-                <span class="pillar-num real-badge">P1</span>
+                <span class="pillar-num">RAD</span>
                 <div>
                   <h3>RADIATION SAFE-ROUTE</h3>
-                  <span class="provider-type-tag real">&#10004; REAL IMPLEMENTATION &bull; NASA DONKI + DIJKSTRA ROUTING</span>
+                  <span class="provider-type-tag">&#10004; ACTIVE PRODUCTION ENGINE &bull; NASA DONKI + DIJKSTRA ROUTING</span>
                 </div>
               </div>
               <span class="badge" id="radRiskBadge">LOW RISK</span>
@@ -189,21 +858,21 @@
                   <strong class="highlight" id="p1SafeModule">Module B: Storm Shelter</strong>
                 </div>
                 <div class="topology-item" style="margin-top: 0.5rem; justify-content: space-between;">
-                  <span class="lbl" style="font-size: 0.75rem; color: var(--accent-green);">&#9679; Connected to real habitat graph</span>
+                  <span class="lbl" style="font-size: 0.75rem; color: var(--accent-green);">&#9679; Connected to habitat graph</span>
                   <button class="link-btn" data-switch-tab="tab-pillar1">View Full Habitat Map &amp; Pathfinding &rarr;</button>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- PILLAR 2: VOICE VITALS (REAL IMPLEMENTATION) -->
+          <!-- VOICE VITALS -->
           <div class="card pillar-card" id="cardPillar2">
             <div class="card-header">
               <div class="pillar-label">
-                <span class="pillar-num real-badge">P2</span>
+                <span class="pillar-num">VOX</span>
                 <div>
                   <h3>VOICE VITALS (PASSIVE)</h3>
-                  <span class="provider-type-tag real">&#10004; REAL IMPLEMENTATION &bull; WHISPER STT + MFCC-CNN + DISTILBERT</span>
+                  <span class="provider-type-tag">&#10004; ACTIVE PRODUCTION ENGINE &bull; WHISPER STT + MFCC-CNN + DISTILBERT</span>
                 </div>
               </div>
               <span class="badge" id="voiceRiskBadge">NORMAL</span>
@@ -233,14 +902,14 @@
             </div>
           </div>
 
-          <!-- PILLAR 3: ASTRO-TWIN (REAL IMPLEMENTATION) -->
+          <!-- ASTRO-TWIN -->
           <div class="card pillar-card" id="cardPillar3">
             <div class="card-header">
               <div class="pillar-label">
-                <span class="pillar-num">P3</span>
+                <span class="pillar-num">BIO</span>
                 <div>
                   <h3>ASTRO-TWIN (PREDICTIVE)</h3>
-                  <span class="provider-type-tag real">&#10004; REAL PROVIDER &bull; HYBRID ML/ODE TWIN</span>
+                  <span class="provider-type-tag">&#10004; ACTIVE PRODUCTION ENGINE &bull; HYBRID ML/ODE TWIN</span>
                 </div>
               </div>
               <span class="badge" id="twinStatusBadge">NOMINAL</span>
@@ -271,14 +940,14 @@
           </div>
         </section>
 
-        <!-- RIGHT COLUMN: PILLAR 4 AUTONOMOUS DECISION ENGINE -->
+        <!-- RIGHT COLUMN: AUTONOMOUS DECISION ENGINE -->
         <section class="engine-column">
           <div class="section-heading">
-            <span class="section-tag">PILLAR 4 CORE &bull; REAL</span>
+            <span class="section-tag">DECISION ENGINE CORE</span>
             <h2>AUTONOMOUS DECISION SUPPORT</h2>
           </div>
 
-          <!-- RISK FUSION PIPELINE & MATHEMATICAL BREAKDOWN (P1 + P2 + P3 -> Pillar 4 -> Decision) -->
+          <!-- RISK FUSION PIPELINE & MATHEMATICAL BREAKDOWN -->
           <div class="card fusion-pipeline-card">
             <div class="card-header">
               <div class="fusion-header-title">
@@ -288,30 +957,36 @@
               <span class="formula-badge" id="fusionFormulaDisplay">0.10 (Base) = 0.10</span>
             </div>
             <div class="card-body">
-              <!-- Visual Flow: P1 + P2 + P3 -> Pillar 4 -> Final Decision -->
+              <!-- Visual Flow: Safe-Route + Voice + Twin -> Fusion Engine -> Final Decision -->
               <div class="pipeline-flow-diagram">
-                <div class="flow-step real-step">
-                  <span class="step-num">REAL P1</span>
+                <div class="flow-step">
+                  <span class="step-num">RAD &bull; P1</span>
                   <span class="step-title">Radiation Safe-Route</span>
+                  <span class="step-sub">Dijkstra Routing</span>
                 </div>
                 <span class="flow-op">+</span>
-                <div class="flow-step real-step">
-                  <span class="step-num">REAL P2</span>
+                <div class="flow-step">
+                  <span class="step-num">VOX &bull; P2</span>
                   <span class="step-title">Voice Vitals</span>
+                  <span class="step-sub">Acoustic Prosody</span>
                 </div>
                 <span class="flow-op">+</span>
-                <div class="flow-step real-step">
-                  <span class="step-num">REAL P3</span>
+                <div class="flow-step">
+                  <span class="step-num">BIO &bull; P3</span>
                   <span class="step-title">Astro-Twin</span>
+                  <span class="step-sub">Mechanostat ODE</span>
                 </div>
                 <span class="flow-arrow">➔</span>
                 <div class="flow-step highlight-step">
-                  <span class="step-num">REAL P4</span>
+                  <span class="step-num">AI &bull; P4</span>
                   <span class="step-title">Fusion Engine</span>
+                  <span class="step-sub">Multimodal Risk</span>
                 </div>
                 <span class="flow-arrow">➔</span>
                 <div class="flow-step result-step" id="flowResultBadge">
+                  <span class="step-num">OUTCOME</span>
                   <span class="step-title" id="flowResultText">Final Decision</span>
+                  <span class="step-sub">Support Directive</span>
                 </div>
               </div>
 
@@ -327,30 +1002,30 @@
                   <div class="fc-detail">Nominal baseline</div>
                 </div>
 
-                <!-- P1 Radiation (Real) -->
+                <!-- Radiation Defense -->
                 <div class="fusion-card" id="fcP1Card">
                   <div class="fc-header">
-                    <span class="fc-pillar">P1: RADIATION [REAL]</span>
+                    <span class="fc-pillar">RADIATION</span>
                     <span class="fc-points" id="fcP1Points">+0.00</span>
                   </div>
                   <div class="fc-status" id="fcP1Status">NOMINAL</div>
                   <div class="fc-detail" id="fcP1Detail">Dose within limits</div>
                 </div>
 
-                <!-- P2 Voice Vitals (Real) -->
+                <!-- Voice Vitals -->
                 <div class="fusion-card" id="fcP2Card">
                   <div class="fc-header">
-                    <span class="fc-pillar">P2: VOICE [REAL]</span>
+                    <span class="fc-pillar">VOICE</span>
                     <span class="fc-points" id="fcP2Points">+0.00</span>
                   </div>
                   <div class="fc-status" id="fcP2Status">NOMINAL</div>
                   <div class="fc-detail" id="fcP2Detail">Within baseline</div>
                 </div>
 
-                <!-- P3 Astro-Twin -->
+                <!-- Astro-Twin -->
                 <div class="fusion-card" id="fcP3Card">
                   <div class="fc-header">
-                    <span class="fc-pillar">P3: TWIN [REAL]</span>
+                    <span class="fc-pillar">DIGITAL TWIN</span>
                     <span class="fc-points" id="fcP3Points">+0.00</span>
                   </div>
                   <div class="fc-status" id="fcP3Status">NOMINAL</div>
@@ -429,7 +1104,7 @@
               <table class="factors-table">
                 <thead>
                   <tr>
-                    <th>Pillar</th>
+                    <th>Domain</th>
                     <th>Observation</th>
                     <th>Severity Impact</th>
                     <th>Metric Detail</th>
@@ -455,23 +1130,22 @@
             </div>
           </div>
         </section>
-      </main>
-    </div>
+      </div> <!-- end tab-mission-control -->
 
     <!-- ===================================================================
-         TAB 2: PILLAR 1 — RADIATION SAFE-ROUTE (REAL IMPLEMENTATION PAGE)
+         TAB 2: RADIATION SAFE-ROUTE
          =================================================================== -->
     <div class="tab-pane" id="tab-pillar1">
       <div class="pillar-page-container">
         <!-- Banner -->
-        <div class="pillar-banner real-impl-banner">
+        <div class="pillar-banner">
           <div class="pillar-banner-info">
-            <h2>P1: Radiation Safe-Route &bull; Environmental Defense</h2>
+            <h2>Radiation Safe-Route &bull; Environmental Defense</h2>
             <p>Spacecraft Habitat Topology, Internal Hull Dose Calculation, Dijkstra Minimum-Dose Evacuation, and NASA DONKI SEP Telemetry.</p>
           </div>
           <div class="pillar-banner-badge">
-            <span class="impl-tag real">&#10004; REAL IMPLEMENTATION COMPLETED</span>
-            <div class="banner-sub">Module: Pillar_1_Radiation/ &bull; NetworkX Graph Pathfinding</div>
+            <span class="impl-tag">&#10004; ACTIVE PRODUCTION ENGINE</span>
+            <div class="banner-sub">Module: Radiation Defense &bull; NetworkX Graph Pathfinding</div>
           </div>
         </div>
 
@@ -609,11 +1283,11 @@
           </div>
         </div>
 
-        <!-- Pillar 3 Handoff Box -->
+        <!-- Closed-Loop Handoff Box -->
         <div class="card" style="border-left: 4px solid var(--accent-cyan);">
           <div class="card-header">
-            <h3>CLOSED-LOOP ARCHITECTURAL HANDOFF: IMPACT ON ASTRO-TWIN (P3)</h3>
-            <span class="sub-header-tag">INTER-PILLAR DATA CONTRACT</span>
+            <h3>CLOSED-LOOP ARCHITECTURAL HANDOFF: IMPACT ON ASTRO-TWIN</h3>
+            <span class="sub-header-tag">INTER-DOMAIN DATA CONTRACT</span>
           </div>
           <div class="card-body">
             <p style="font-size: 0.95rem; color: var(--text-main); margin-bottom: 0.75rem;">
@@ -640,34 +1314,83 @@
     </div>
 
     <!-- ===================================================================
-         TAB 3: PILLAR 2 — VOICE VITALS (REAL IMPLEMENTATION PAGE)
+         TAB 3: VOICE VITALS
          =================================================================== -->
     <div class="tab-pane" id="tab-pillar2">
       <div class="pillar-page-container">
         <!-- Banner -->
-        <div class="pillar-banner real-impl-banner">
+        <div class="pillar-banner">
           <div class="pillar-banner-info">
-            <h2>P2: Voice Vitals &bull; Passive Acoustic Biometrics</h2>
+            <h2>Voice Vitals &bull; Passive Acoustic Biometrics</h2>
             <p>Passive vocal acoustic analysis extracting cognitive strain, neuromuscular fatigue, and early hypoxia indicators from astronaut audio logs.</p>
           </div>
           <div class="pillar-banner-badge">
-            <span class="impl-tag real">&#10004; REAL IMPLEMENTATION COMPLETED</span>
-            <div class="banner-sub">Module: voice_vitals_pipeline.py &bull; Whisper STT + MFCC-CNN + DistilBERT</div>
+            <span class="impl-tag">&#10004; ACTIVE PRODUCTION ENGINE</span>
+            <div class="banner-sub">Module: Voice Analysis &bull; Whisper STT + MFCC-CNN + DistilBERT</div>
           </div>
         </div>
 
-        <!-- Audio Log Processing Control Strip -->
-        <div class="controls-bar">
-          <div class="control-group" style="flex: 1;">
-            <label for="p2AudioSelect">Mission Audio Sample:</label>
-            <select id="p2AudioSelect" class="select-input">
-              <option value="test_audio.wav" selected>test_audio.wav (Astronaut Check-in: Fatigue &amp; Strain Anomaly)</option>
-            </select>
+        <!-- Audio Log Processing & Voice Input Control Strip -->
+        <div class="controls-bar" style="display: flex; flex-direction: column; gap: 1rem; padding: 1.25rem;">
+          <div style="display: flex; gap: 1rem; flex-wrap: wrap; width: 100%; align-items: flex-end;">
+            <!-- Astronaut Profile Baseline Selector -->
+            <div class="control-group" style="min-width: 260px;">
+              <label for="p2AstroSelect">Astronaut Medical Baseline:</label>
+              <select id="p2AstroSelect" class="select-input">
+                <option value="ASTRO-01" selected>ASTRO-01 &bull; Cmdr. Shepard (Nominal Rest Baseline)</option>
+                <option value="ASTRO-02">ASTRO-02 &bull; Dr. Vance (High Workload Baseline)</option>
+              </select>
+            </div>
+
+            <!-- Dynamic Audio File Selector (from GitHub / local) -->
+            <div class="control-group" style="flex: 1; min-width: 320px;">
+              <label for="p2AudioSelect">Mission Audio Log File:</label>
+              <select id="p2AudioSelect" class="select-input">
+                <option value="normal_log.wav" selected>normal_log.wav (Cmdr. Shepard - Rested Check-in, Systems Green)</option>
+                <option value="fatigued_log.wav">fatigued_log.wav (Dr. Vance - Neuromuscular Fatigue &amp; Slowed Speech)</option>
+                <option value="stressed_log.wav">stressed_log.wav (Acute Isolation Drift &amp; Negative Affect)</option>
+                <option value="test_audio.wav">test_audio.wav (Mission Log - Speech Distortion Anomaly)</option>
+              </select>
+            </div>
           </div>
 
-          <button id="p2RunInferenceBtn" class="btn" style="background: var(--accent-cyan); color: #000; font-weight: 700;">
-            🎙️ RUN NEURAL SPEECH INFERENCE
-          </button>
+          <!-- Voice Input Action Buttons -->
+          <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+            <button id="p2RunInferenceBtn" class="btn" style="background: var(--accent-cyan); color: #000; font-weight: 700; padding: 0.65rem 1.25rem;">
+              ⚡ ANALYZE SELECTED AUDIO
+            </button>
+
+            <!-- Live Voice Input Microphone Recording Button -->
+            <button id="p2RecordVoiceBtn" class="btn btn-outline" style="border-color: #f43f5e; color: #fda4af; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.25rem;">
+              <span id="p2RecordIcon">🎙️</span>
+              <span id="p2RecordText">RECORD LIVE VOICE INPUT</span>
+            </button>
+
+            <!-- Upload Custom .wav File -->
+            <label for="p2AudioFileInput" class="btn btn-outline" style="cursor: pointer; display: flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.25rem; font-weight: 600; margin: 0; color: #a5f3fc; border-color: rgba(56, 189, 248, 0.4);">
+              <span>📁 UPLOAD .WAV FILE</span>
+              <input type="file" id="p2AudioFileInput" accept="audio/*" style="display: none;" />
+            </label>
+
+            <span id="p2SelectedFileTag" style="font-size: 0.8rem; color: var(--text-muted); font-family: var(--font-mono);"></span>
+          </div>
+
+          <!-- Live Recording In-Progress Banner -->
+          <div id="p2RecordingBanner" style="display: none; background: rgba(244, 63, 94, 0.15); border: 1px solid rgba(244, 63, 94, 0.4); border-radius: 8px; padding: 0.75rem 1.25rem; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <span class="live-pulse-dot" style="background: #f43f5e; width: 12px; height: 12px; border-radius: 50%; display: inline-block; animation: pulseRedGlow 1s infinite;"></span>
+              <span style="font-weight: 700; color: #fff;">LIVE MICROPHONE VOICE INPUT RECORDING...</span>
+              <span id="p2RecordTimer" style="font-family: var(--font-mono); color: #fda4af; font-weight: 700; font-size: 1.1rem; margin-left: 0.5rem;">00:00</span>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              <button id="p2StopRecordBtn" class="btn" style="background: #f43f5e; color: #fff; font-weight: 700; padding: 0.45rem 1rem;">
+                ⏹️ STOP &amp; RUN INFERENCE
+              </button>
+              <button id="p2CancelRecordBtn" class="btn btn-outline" style="padding: 0.45rem 0.85rem; font-size: 0.8rem;">
+                ✕ Cancel
+              </button>
+            </div>
+          </div>
         </div>
 
         <!-- Speech-to-Text Transcript & Sentiment Panel -->
@@ -785,19 +1508,19 @@
     </div>
 
     <!-- ===================================================================
-         TAB 4: PILLAR 3 — ASTRO-TWIN (REAL IMPLEMENTATION PAGE)
+         TAB 4: ASTRO-TWIN
          =================================================================== -->
     <div class="tab-pane" id="tab-pillar3">
       <div class="pillar-page-container">
         <!-- Banner -->
-        <div class="pillar-banner real-impl-banner">
+        <div class="pillar-banner">
           <div class="pillar-banner-info">
-            <h2>P3: Astro-Twin &bull; Predictive Physiological Digital Twin</h2>
+            <h2>Astro-Twin &bull; Predictive Physiological Digital Twin</h2>
             <p>Forward-simulation of musculoskeletal deconditioning, bone mineral density decay, and adaptive compensatory exercise prescriptions under confinement or equipment outages.</p>
           </div>
           <div class="pillar-banner-badge">
-            <span class="impl-tag real">&#10004; REAL IMPLEMENTATION COMPLETED</span>
-            <div class="banner-sub">Module: aegis_deepspace/pillar3_real.py &bull; Mechanostat ODE + Scikit-Learn GBM</div>
+            <span class="impl-tag">&#10004; ACTIVE PRODUCTION ENGINE</span>
+            <div class="banner-sub">Module: Physiological Twin &bull; Mechanostat ODE + Scikit-Learn GBM</div>
           </div>
         </div>
 
@@ -997,52 +1720,58 @@
     </div>
 
     <!-- ===================================================================
-         TAB 5: PILLAR 4 — AUTONOMOUS DECISION ENGINE (REAL ENGINE PAGE)
+         TAB 5: AUTONOMOUS DECISION ENGINE
          =================================================================== -->
     <div class="tab-pane" id="tab-pillar4">
       <div class="pillar-page-container">
         <!-- Banner -->
-        <div class="pillar-banner real-impl-banner">
+        <div class="pillar-banner">
           <div class="pillar-banner-info">
-            <h2>P4: Autonomous Decision Engine &bull; AI Flight Surgeon</h2>
-            <p>Multimodal risk fusion synthesizing P1, P2, and P3 with offline local NASA research citations, synergy escalation, and explainable recommendations.</p>
+            <h2>Autonomous Decision Engine &bull; AI Flight Surgeon</h2>
+            <p>Multimodal risk fusion synthesizing radiation safe-routing, acoustic vitals, and physiological digital twin forecasting with offline NASA research citations, synergy escalation, and explainable recommendations.</p>
           </div>
           <div class="pillar-banner-badge">
-            <span class="impl-tag real">&#10004; REAL IMPLEMENTATION COMPLETED</span>
-            <div class="banner-sub">Module: aegis_deepspace/decision_engine.py &bull; Deterministic &amp; Auditable</div>
+            <span class="impl-tag">&#10004; ACTIVE PRODUCTION ENGINE</span>
+            <div class="banner-sub">Module: Decision Fusion &bull; Deterministic &amp; Auditable</div>
           </div>
         </div>
 
         <!-- Architecture Flow Banner -->
         <div class="card" style="border-color: var(--accent-cyan);">
           <div class="card-header">
-            <h3>FOUR-PILLAR SYSTEM INTEGRATION ARCHITECTURE</h3>
+            <h3>MULTI-MODAL SYSTEM INTEGRATION ARCHITECTURE</h3>
             <span class="sub-header-tag">DATA FLOW &amp; RESPONSIBILITIES</span>
           </div>
           <div class="card-body">
             <div class="pipeline-flow-diagram">
-              <div class="flow-step real-step">
-                <span class="step-num">REAL P1</span>
-                <span class="step-title">Radiation Safe-Route (Topology + Dijkstra)</span>
+              <div class="flow-step">
+                <span class="step-num">RAD &bull; PILLAR 1</span>
+                <span class="step-title">Radiation Safe-Route</span>
+                <span class="step-sub">Topology + Dijkstra</span>
               </div>
               <span class="flow-op">+</span>
-              <div class="flow-step real-step">
-                <span class="step-num">REAL P2</span>
-                <span class="step-title">Voice Vitals (Acoustic Biometrics &amp; NLP)</span>
+              <div class="flow-step">
+                <span class="step-num">VOX &bull; PILLAR 2</span>
+                <span class="step-title">Voice Vitals</span>
+                <span class="step-sub">Acoustics &amp; NLP</span>
               </div>
               <span class="flow-op">+</span>
-              <div class="flow-step real-step">
-                <span class="step-num">REAL P3</span>
-                <span class="step-title">Astro-Twin (Hybrid Mechanostat ODE + ML Twin)</span>
+              <div class="flow-step">
+                <span class="step-num">BIO &bull; PILLAR 3</span>
+                <span class="step-title">Astro-Twin</span>
+                <span class="step-sub">Mechanostat + ML</span>
               </div>
               <span class="flow-arrow">➔</span>
               <div class="flow-step highlight-step">
-                <span class="step-num">REAL P4</span>
-                <span class="step-title">Autonomous Fusion Engine</span>
+                <span class="step-num">AI &bull; PILLAR 4</span>
+                <span class="step-title">Autonomous Fusion</span>
+                <span class="step-sub">Multimodal Engine</span>
               </div>
               <span class="flow-arrow">➔</span>
               <div class="flow-step result-step">
-                <span class="step-title">Flight Surgeon Recommendations</span>
+                <span class="step-num">OUTCOME</span>
+                <span class="step-title">Flight Surgeon Directives</span>
+                <span class="step-sub">Action &amp; Contingency</span>
               </div>
             </div>
             <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 0.5rem;">
@@ -1079,7 +1808,7 @@
               </div>
               <div class="metric">
                 <span class="lbl">Active Anomalies</span>
-                <span class="val" id="p4AnomaliesCount" style="font-size: 1rem; color: var(--accent-cyan);">0 Pillars</span>
+                <span class="val" id="p4AnomaliesCount" style="font-size: 1rem; color: var(--accent-cyan);">0 Domains</span>
               </div>
             </div>
           </div>
@@ -1162,7 +1891,7 @@
             <div>
               <h3>WHAT-IF / COUNTERFACTUAL SIMULATOR</h3>
               <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem;">
-                Explore operational counterfactuals: evaluate how delayed crew action alters radiation absorption and feeds through the P4 fusion engine.
+                Explore operational counterfactuals: evaluate how delayed crew action alters radiation absorption and feeds through the fusion engine.
               </div>
             </div>
             <span class="mock-tag" style="background: rgba(255, 171, 0, 0.2); border-color: var(--accent-amber); color: #ffd54f;">
@@ -1175,7 +1904,7 @@
               <span>ℹ️</span>
               <span>
                 <strong>SIMULATION / COUNTERFACTUAL MODEL:</strong>
-                Calculates deterministic physical projection based on P1 compartment dose rates and feeds modified state through the <strong>real existing P4 Decision Engine</strong>.
+                Calculates deterministic physical projection based on compartment dose rates and feeds modified state through the <strong>Autonomous Decision Engine</strong>.
                 Outputs represent operational decision support models, not accredited clinical prognoses.
               </span>
             </div>
@@ -1218,7 +1947,7 @@
                     <span class="val" id="whatIfBaseExposure">1.20 <small>mSv</small></span>
                   </div>
                   <div class="wb-metric">
-                    <span class="lbl">P4 Composite Risk Score</span>
+                    <span class="lbl">Composite Risk Score</span>
                     <span class="val" id="whatIfBaseScore">0.10</span>
                   </div>
                 </div>
@@ -1283,9 +2012,9 @@
             <div class="card-body">
               <ul class="reasoning-list">
                 <li><strong>Base Score:</strong> 0.10 nominal background flight risk.</li>
-                <li><strong>P1 Radiation Contribution:</strong> +0.45 (Critical SPE), +0.30 (Elevated Flux), +0.15 (Moderate).</li>
-                <li><strong>P2 Voice Vitals Contribution:</strong> +0.35 (Hypoxia marker &ge; 0.40), +0.25 (Cognitive strain / fatigue &ge; 0.50).</li>
-                <li><strong>P3 Astro-Twin Contribution:</strong> +0.25 (Exercise deficit &ge; 4 days), +0.15 (&ge; 2 days or bone loss &gt; 1.2%/mo).</li>
+                <li><strong>Radiation Defense Contribution:</strong> +0.45 (Critical SPE), +0.30 (Elevated Flux), +0.15 (Moderate).</li>
+                <li><strong>Voice Vitals Contribution:</strong> +0.35 (Hypoxia marker &ge; 0.40), +0.25 (Cognitive strain / fatigue &ge; 0.50).</li>
+                <li><strong>Astro-Twin Contribution:</strong> +0.25 (Exercise deficit &ge; 4 days), +0.15 (&ge; 2 days or bone loss &gt; 1.2%/mo).</li>
                 <li><strong>Synergy Escalation:</strong> +0.20 when high radiation coincides with cognitive slowing or exercise deconditioning.</li>
                 <li><strong>Bounding:</strong> Final score clamped to [0.05, 0.99] mapped to LOW (&lt;0.30), MEDIUM (&lt;0.50), HIGH (&lt;0.75), CRITICAL (&ge;0.75).</li>
               </ul>
@@ -1310,19 +2039,1292 @@
       </div>
     </div>
 
-    <!-- FOOTER -->
-    <footer class="app-footer">
-      <div>Aegis-DeepSpace: Four-Pillar Deep-Space Health Architecture &bull; Designed for 20-min Mars Comms Latency</div>
-      <div class="footer-links">
-        <span>P1: Real Dijkstra Habitat Routing</span>
-        <span>•</span>
-        <span>P2/P3: Simulated Vitals &amp; Digital Twin</span>
-        <span>•</span>
-        <span>P4: Autonomous Decision Fusion</span>
+    <!-- ===================================================================
+         TAB 6: ARTIFICIAL GRAVITY CENTRIFUGAL SPIN-DOWN SIMULATOR
+         =================================================================== -->
+    <div class="tab-pane" id="tab-centrifuge">
+      <!-- HERO HEADER -->
+      <div class="card p1-header-card" style="border-left: 4px solid var(--accent-red); margin-bottom: 1.5rem;">
+        <div class="card-header" style="justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+              <span class="badge" style="background: rgba(244, 63, 94, 0.2); color: #f43f5e; border: 1px solid rgba(244, 63, 94, 0.4);">CRITICAL FLIGHT SURGEON SIMULATION</span>
+              <span class="sub-header-tag">0.38g &rarr; 0.00g MICROGRAVITY SHOCK TRANSITION</span>
+            </div>
+            <h2 style="font-size: 1.5rem; font-weight: 700; color: #fff;">Centrifugal Ring Spin-Down &amp; Gravity Gradient Disruption Simulator</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem;">
+              Mechanical governor failure induces emergency habitat despin with angular Coriolis shear, cephalad fluid shift, neurovestibular dissociation, and autonomous Level-5 intervention override.
+            </p>
+          </div>
+          <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <button id="btnRunCentrifugeSim" class="btn" style="background: linear-gradient(135deg, #f43f5e, #be123c); color: #fff; font-weight: 600; box-shadow: 0 4px 14px rgba(244, 63, 94, 0.35);">
+              ⚡ Run 90s Despin Shock
+            </button>
+            <button id="btnActuateCentrifuge" class="btn btn-primary" style="background: linear-gradient(135deg, #10b981, #047857); color: #fff; font-weight: 600; border: none;">
+              🛡️ Deploy Autonomous Interventions
+            </button>
+            <button id="btnInjectCentrifuge" class="btn btn-outline" style="border-color: #a855f7; color: #c084fc;">
+              🧠 Inject to Mission Control
+            </button>
+            <button id="btnResetCentrifuge" class="btn btn-outline" style="border-color: rgba(255,255,255,0.2);">
+              🔄 Reset Nominal 0.38g
+            </button>
+          </div>
+        </div>
       </div>
-    </footer>
+
+      <!-- SIMULATION CONTROLS & HABITAT ROTATION DISPLAY (GRID) -->
+      <div style="display: grid; grid-template-columns: 1fr 1.25fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+        <!-- Left: Interactive Controls -->
+        <div class="card">
+          <div class="card-header">
+            <h3>SIMULATOR DYNAMICS &amp; INITIAL CONDITIONS</h3>
+            <span class="sub-header-tag">PHYSICS ENGINE</span>
+          </div>
+          <div class="card-body">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+              <div class="form-group">
+                <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">BASELINE GRAVITY</label>
+                <select id="cfgInitialG" class="form-control" style="width: 100%; background: var(--bg-input); color: #fff; border: 1px solid var(--border-color); padding: 0.5rem; border-radius: 6px;">
+                  <option value="0.38" selected>0.38g (Mars Transit Analog)</option>
+                  <option value="1.00">1.00g (Full Earth Equivalent)</option>
+                  <option value="0.16">0.16g (Lunar Analog)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">DESPIN DURATION</label>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <input type="range" id="cfgDuration" min="30" max="180" step="10" value="90" style="flex: 1;">
+                  <span id="cfgDurationVal" style="font-family: var(--font-mono); font-weight: 600; width: 45px;">90s</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+              <div class="form-group">
+                <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">ANGULAR SHEAR (&alpha;)</label>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <input type="range" id="cfgAngularDecel" min="0.5" max="5.0" step="0.1" value="2.4" style="flex: 1;">
+                  <span id="cfgAngularDecelVal" style="font-family: var(--font-mono); font-weight: 600; width: 55px;">2.4°/s²</span>
+                </div>
+              </div>
+              <div class="form-group">
+                <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">FLUID SHIFT RATE</label>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <input type="range" id="cfgFluidShift" min="400" max="1500" step="50" value="850" style="flex: 1;">
+                  <span id="cfgFluidShiftVal" style="font-family: var(--font-mono); font-weight: 600; width: 65px;">+850 mL</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.25rem;">
+              <div style="font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.5rem; letter-spacing: 0.05em;">CREW HARNESS &amp; SYSTEM ACTUATION OVERRIDES</div>
+              <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer;">
+                  <input type="checkbox" id="cfgStrappedOnset">
+                  <span>Crew Strapped into Workstation Harnesses at Onset</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer;">
+                  <input type="checkbox" id="cfgDeckLock">
+                  <span>Energize Electromagnetic Floor Deck Lock (Boot Solenoid)</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer;">
+                  <input type="checkbox" id="cfgCountermeasures">
+                  <span>Deploy Autonomous Antiemetics &amp; Braslet Venous Cuffs</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- TIMELINE SCRUBBER & PLAYBACK CONTROLS -->
+            <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <span style="font-size: 0.8rem; font-weight: 600; color: var(--accent-cyan); letter-spacing: 0.05em;">TIMELINE PLAYBACK / SCRUBBER</span>
+                <span id="simScrubberTimeText" style="font-family: var(--font-mono); font-size: 0.95rem; font-weight: 700; color: #fff;">t = 0.0s / 90.0s</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                <button id="btnPlayCentrifuge" class="btn btn-outline" style="padding: 0.25rem 0.75rem; font-size: 0.85rem;">▶ Play</button>
+                <input type="range" id="simScrubber" min="0" max="90" step="1" value="0" style="flex: 1;">
+              </div>
+              <div id="simCurrentPhaseText" style="font-size: 0.8rem; color: var(--text-muted); font-style: italic;">
+                Phase: Nominal Centrifugal Spin (0.38g Mars)
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Animated Centrifugal Ring & Velocity Vectors -->
+        <div class="card">
+          <div class="card-header">
+            <h3>CENTRIFUGAL HABITAT ROTATION &amp; CORIOLIS FIELD</h3>
+            <span class="sub-header-tag" id="ringGovernorTag">GOVERNOR NOMINAL</span>
+          </div>
+          <div class="card-body" style="display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;">
+            <div style="position: relative; width: 280px; height: 280px; margin: 0.5rem 0 1rem 0;">
+              <!-- Outer rotating habitat ring -->
+              <svg id="svgHabitatRing" viewBox="0 0 300 300" style="width: 100%; height: 100%; transform-origin: center; transition: transform 0.1s linear;">
+                <circle cx="150" cy="150" r="135" fill="none" stroke="rgba(56, 189, 248, 0.15)" stroke-width="26" />
+                <circle cx="150" cy="150" r="135" fill="none" stroke="rgba(56, 189, 248, 0.4)" stroke-width="2" stroke-dasharray="8 6" />
+                <circle cx="150" cy="150" r="148" fill="none" stroke="rgba(255, 255, 255, 0.2)" stroke-width="1.5" />
+                <circle cx="150" cy="150" r="122" fill="none" stroke="rgba(255, 255, 255, 0.2)" stroke-width="1.5" />
+                
+                <!-- Radial spokes to core hub -->
+                <line x1="150" y1="150" x2="150" y2="15" stroke="rgba(255, 255, 255, 0.15)" stroke-width="2" />
+                <line x1="150" y1="150" x2="150" y2="285" stroke="rgba(255, 255, 255, 0.15)" stroke-width="2" />
+                <line x1="150" y1="150" x2="15" y2="150" stroke="rgba(255, 255, 255, 0.15)" stroke-width="2" />
+                <line x1="150" y1="150" x2="285" y2="150" stroke="rgba(255, 255, 255, 0.15)" stroke-width="2" />
+                
+                <!-- Central zero-g hub -->
+                <circle cx="150" cy="150" r="28" fill="#0f172a" stroke="#38bdf8" stroke-width="2" />
+                <text x="150" y="154" text-anchor="middle" fill="#38bdf8" font-size="10" font-family="sans-serif" font-weight="bold">HUB</text>
+                
+                <!-- 4 Habitat Modules & Crew Markers in Ring -->
+                <!-- Module A / CR-1 -->
+                <circle id="crewDot1" cx="150" cy="22" r="8" fill="#10b981" stroke="#fff" stroke-width="1.5" />
+                <!-- Module B / CR-2 -->
+                <circle id="crewDot2" cx="278" cy="150" r="8" fill="#10b981" stroke="#fff" stroke-width="1.5" />
+                <!-- Module C / CR-3 -->
+                <circle id="crewDot3" cx="150" cy="278" r="8" fill="#10b981" stroke="#fff" stroke-width="1.5" />
+                <!-- Module D / CR-4 -->
+                <circle id="crewDot4" cx="22" cy="150" r="8" fill="#10b981" stroke="#fff" stroke-width="1.5" />
+              </svg>
+
+              <!-- Central Telemetry Overlay Badge -->
+              <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; text-align: center; background: rgba(10, 15, 26, 0.85); padding: 0.35rem 0.6rem; border-radius: 6px; border: 1px solid var(--border-color); backdrop-filter: blur(4px);">
+                <div id="ringRpmDisplay" style="font-family: var(--font-mono); font-size: 0.85rem; font-weight: 700; color: var(--accent-cyan);">3.80 RPM</div>
+                <div id="ringGDisplay" style="font-family: var(--font-mono); font-size: 0.75rem; color: #fff;">0.38g</div>
+              </div>
+            </div>
+
+            <!-- Coriolis & Spin Status Readouts -->
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; width: 100%; text-align: center;">
+              <div style="background: rgba(255,255,255,0.02); padding: 0.5rem; border-radius: 6px; border: 1px solid var(--border-color);">
+                <div style="font-size: 0.7rem; color: var(--text-dim);">ANGULAR VELOCITY</div>
+                <div id="statAngVel" style="font-family: var(--font-mono); font-size: 1rem; font-weight: 700; color: #fff;">22.8 °/s</div>
+              </div>
+              <div style="background: rgba(255,255,255,0.02); padding: 0.5rem; border-radius: 6px; border: 1px solid var(--border-color);">
+                <div style="font-size: 0.7rem; color: var(--text-dim);">CORIOLIS SHEAR</div>
+                <div id="statCoriolisShear" style="font-family: var(--font-mono); font-size: 1rem; font-weight: 700; color: #f59e0b;">0.42 G</div>
+              </div>
+              <div style="background: rgba(255,255,255,0.02); padding: 0.5rem; border-radius: 6px; border: 1px solid var(--border-color);">
+                <div style="font-size: 0.7rem; color: var(--text-dim);">CREW KINEMATICS</div>
+                <div id="statCrewKinematics" style="font-family: var(--font-mono); font-size: 0.85rem; font-weight: 700; color: #10b981;">GROUNDED</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KEY BIOMETRIC GAUGES & SHOCK TELEMETRY -->
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
+        <!-- Gauge 1: Gravity Level -->
+        <div class="card" style="border-top: 3px solid var(--accent-cyan);">
+          <div class="card-header" style="padding: 0.75rem 1rem;">
+            <h4 style="font-size: 0.85rem; color: var(--text-muted);">EFFECTIVE GRAVITY</h4>
+            <span class="badge" id="badgeGLevel">0.38g MARS</span>
+          </div>
+          <div class="card-body" style="padding: 1rem; text-align: center;">
+            <div id="valLiveGLevel" style="font-family: var(--font-mono); font-size: 2.2rem; font-weight: 800; color: #fff;">0.380g</div>
+            <div style="background: rgba(255,255,255,0.1); height: 8px; border-radius: 4px; overflow: hidden; margin: 0.75rem 0 0.5rem 0;">
+              <div id="barLiveGLevel" style="background: var(--accent-cyan); height: 100%; width: 100%; transition: width 0.2s;"></div>
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-dim);">Hydrostatic Column: <span id="valHydrostaticCol">100% Intact</span></div>
+          </div>
+        </div>
+
+        <!-- Gauge 2: Central Venous Pressure (CVP) -->
+        <div class="card" style="border-top: 3px solid #3b82f6;">
+          <div class="card-header" style="padding: 0.75rem 1rem;">
+            <h4 style="font-size: 0.85rem; color: var(--text-muted);">CENTRAL VENOUS PRESS.</h4>
+            <span class="badge" id="badgeCvp">NOMINAL</span>
+          </div>
+          <div class="card-body" style="padding: 1rem; text-align: center;">
+            <div id="valLiveCvp" style="font-family: var(--font-mono); font-size: 2.2rem; font-weight: 800; color: #60a5fa;">4.2 <span style="font-size: 1rem; font-weight: 500;">mmHg</span></div>
+            <div style="background: rgba(255,255,255,0.1); height: 8px; border-radius: 4px; overflow: hidden; margin: 0.75rem 0 0.5rem 0;">
+              <div id="barLiveCvp" style="background: #3b82f6; height: 100%; width: 35%; transition: width 0.2s;"></div>
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-dim);">Cephalad Shift: <span id="valLiveFluidVol">+0 mL</span> (<span id="valLiveFluidRate">+850 mL/min</span>)</div>
+          </div>
+        </div>
+
+        <!-- Gauge 3: Intracranial Pressure (ICP) -->
+        <div class="card" style="border-top: 3px solid #f43f5e;">
+          <div class="card-header" style="padding: 0.75rem 1rem;">
+            <h4 style="font-size: 0.85rem; color: var(--text-muted);">INTRACRANIAL PRESS. (ICP)</h4>
+            <span class="badge" id="badgeIcp">NORMAL</span>
+          </div>
+          <div class="card-body" style="padding: 1rem; text-align: center;">
+            <div id="valLiveIcp" style="font-family: var(--font-mono); font-size: 2.2rem; font-weight: 800; color: #f87171;">10.5 <span style="font-size: 1rem; font-weight: 500;">mmHg</span></div>
+            <div style="background: rgba(255,255,255,0.1); height: 8px; border-radius: 4px; overflow: hidden; margin: 0.75rem 0 0.5rem 0;">
+              <div id="barLiveIcp" style="background: #f43f5e; height: 100%; width: 43%; transition: width 0.2s;"></div>
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-dim);">Retrobulbar Hypertensive Threshold: <strong style="color: #fca5a5;">20.0 mmHg</strong></div>
+          </div>
+        </div>
+
+        <!-- Gauge 4: Neurovestibular / SMS Severity Index -->
+        <div class="card" style="border-top: 3px solid #a855f7;">
+          <div class="card-header" style="padding: 0.75rem 1rem;">
+            <h4 style="font-size: 0.85rem; color: var(--text-muted);">SMS SEVERITY INDEX</h4>
+            <span class="badge" id="badgeSms">NOMINAL</span>
+          </div>
+          <div class="card-body" style="padding: 1rem; text-align: center;">
+            <div id="valLiveSms" style="font-family: var(--font-mono); font-size: 2.2rem; font-weight: 800; color: #c084fc;">0.0 <span style="font-size: 1rem; font-weight: 500;">/ 100</span></div>
+            <div style="background: rgba(255,255,255,0.1); height: 8px; border-radius: 4px; overflow: hidden; margin: 0.75rem 0 0.5rem 0;">
+              <div id="barLiveSms" style="background: #a855f7; height: 100%; width: 0%; transition: width 0.2s;"></div>
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-dim);">Canal-Otolith Mismatch: <span id="valLiveMismatch">0.0°</span> | Collision: <span id="valLiveCollision">0%</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TRAJECTORY DYNAMICS CHART (SVG INTERACTIVE CURVES) -->
+      <div class="card" style="margin-bottom: 1.5rem;">
+        <div class="card-header" style="justify-content: space-between; align-items: center;">
+          <div>
+            <h3>BIOMECHANICAL DYNAMICS TRAJECTORY (0s &rarr; 90s)</h3>
+            <span class="sub-header-tag">HIGH-FREQUENCY HEMODYNAMIC &amp; NEUROVESTIBULAR TIME SERIES</span>
+          </div>
+          <div style="display: flex; gap: 1rem; font-size: 0.8rem; font-family: var(--font-mono);">
+            <span style="color: #38bdf8;">&mdash; Gravity (g)</span>
+            <span style="color: #3b82f6;">&mdash; CVP (mmHg)</span>
+            <span style="color: #f43f5e;">&mdash; ICP (mmHg)</span>
+            <span style="color: #a855f7;">&mdash; SMS Index (0-100)</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div style="width: 100%; height: 200px; position: relative;">
+            <svg id="svgTrajectoryChart" viewBox="0 0 900 200" preserveAspectRatio="none" style="width: 100%; height: 100%; overflow: visible;">
+              <!-- Grid lines -->
+              <line x1="0" y1="40" x2="900" y2="40" stroke="rgba(255,255,255,0.06)" stroke-width="1" />
+              <line x1="0" y1="90" x2="900" y2="90" stroke="rgba(255,255,255,0.06)" stroke-width="1" />
+              <line x1="0" y1="140" x2="900" y2="140" stroke="rgba(255,255,255,0.06)" stroke-width="1" />
+              
+              <!-- ICP Hypertensive Danger Line at ~20 mmHg -->
+              <line x1="0" y1="65" x2="900" y2="65" stroke="rgba(244, 63, 94, 0.4)" stroke-dasharray="4 4" stroke-width="1.5" />
+              <text x="890" y="60" text-anchor="end" fill="rgba(244, 63, 94, 0.7)" font-size="10" font-family="monospace">ICP DANGER THRESHOLD 20 mmHg</text>
+
+              <!-- Paths rendered dynamically by app.js -->
+              <path id="pathGravity" fill="none" stroke="#38bdf8" stroke-width="2.5" />
+              <path id="pathCvp" fill="none" stroke="#3b82f6" stroke-width="2.5" />
+              <path id="pathIcp" fill="none" stroke="#f43f5e" stroke-width="2.5" />
+              <path id="pathSms" fill="none" stroke="#a855f7" stroke-width="2.5" />
+
+              <!-- Vertical Timeline Scrubber Cursor -->
+              <line id="scrubberCursorLine" x1="0" y1="0" x2="0" y2="200" stroke="#fff" stroke-width="2" stroke-dasharray="2 2" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- CREW ROSTER STATUS MATRIX (CR-1 TO CR-4) -->
+      <div class="card" style="margin-bottom: 1.5rem;">
+        <div class="card-header">
+          <h3>CREW MULTI-INDIVIDUAL BIOMETRIC MONITORING (TRANS-DESPIN ROSTER)</h3>
+          <span class="sub-header-tag">AUTONOMOUS BIOSENSOR STREAM</span>
+        </div>
+        <div class="card-body">
+          <div id="centrifugeCrewGrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;">
+            <!-- Populated dynamically via JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 3 PRIORITIZED CLINICAL DIRECTIVES & SYSTEM INTERVENTIONS -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+        <!-- Triage Directives -->
+        <div class="card">
+          <div class="card-header">
+            <h3>PRIORITIZED CLINICAL TRIAGE DIRECTIVES</h3>
+            <span class="sub-header-tag">AUTONOMOUS FLIGHT SURGEON</span>
+          </div>
+          <div class="card-body" id="centrifugeDirectivesContainer">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Hardware & Actuator Interventions -->
+        <div class="card">
+          <div class="card-header">
+            <h3>SYSTEM INTERVENTIONS &amp; HARDWARE ACTUATORS</h3>
+            <span class="sub-header-tag">ECLSS &bull; DISPENSER &bull; HULL SAFING</span>
+          </div>
+          <div class="card-body" id="centrifugeInterventionsContainer">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+      </div>
+
+      <!-- FLIGHT SURGEON VERDICT & STRUCTURED JSON TELEMETRY PACKET -->
+      <div class="card">
+        <div class="card-header" style="justify-content: space-between; align-items: center;">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <h3>FLIGHT SURGEON VERDICT &amp; TELEMETRY PACKET</h3>
+            <span class="badge" id="badgeVerdictAlert" style="background: rgba(244, 63, 94, 0.2); color: #f43f5e; border: 1px solid rgba(244, 63, 94, 0.5);">RED_CRITICAL_EMERGENCY</span>
+            <span class="sub-header-tag">LEVEL 5 OVERRIDE</span>
+          </div>
+          <button id="btnCopyCentrifugeJson" class="btn btn-outline" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;">
+            📋 Copy JSON Packet
+          </button>
+        </div>
+        <div class="card-body">
+          <p id="centrifugeVerdictRationale" style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem; line-height: 1.6; background: rgba(255,255,255,0.03); padding: 0.75rem 1rem; border-radius: 6px; border-left: 3px solid var(--accent-red);">
+            Governor loss induces an acute transition through high-gradient Coriolis shear coupled with total loss of hydrostatic equilibrium. In the absence of immediate Earth comms, the Decision Engine has exercised autonomous authority to command electromagnetic deck lock, deploy pneumatic impact baffles, and prime needle-free antiemetics across all 4 crew biosystems.
+          </p>
+          <pre id="centrifugeJsonBlock" style="background: #05080f; color: #a5f3fc; padding: 1rem; border-radius: 8px; font-family: var(--font-mono); font-size: 0.82rem; overflow-x: auto; max-height: 380px; border: 1px solid var(--border-color);"></pre>
+        </div>
+      </div>
+    </div> <!-- end tab-centrifuge -->
+
+    <!-- ===================================================================
+         TAB 7: AUTONOMOUS AI FLIGHT SURGEON COPILOT (DEDICATED SECTION)
+         =================================================================== -->
+    <div class="tab-pane" id="tab-copilot">
+      <!-- HERO HEADER CARD -->
+      <div class="card p1-header-card" style="border-left: 4px solid var(--accent-cyan); margin-bottom: 1.5rem;">
+        <div class="card-header" style="justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+              <span style="font-size: 1.5rem;">🩺</span>
+              <h2 style="font-size: 1.35rem; font-weight: 800; letter-spacing: 0.5px; color: #fff;">
+                AUTONOMOUS AI FLIGHT SURGEON COPILOT
+              </h2>
+            </div>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0;">
+              Dual-Tier Edge Intelligence: Real-Time Telemetry Inspector + Offline NASA-STD-3001 Clinical RAG Engine (&lt;2MB RAM)
+            </p>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+            <span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35);">
+              ● LEVEL 5 AUTONOMOUS
+            </span>
+            <span class="badge" style="background: rgba(52, 211, 153, 0.15); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.35);">
+              ⚡ ZERO CLOUD DELAY (&lt;5ms)
+            </span>
+            <span class="badge" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.35);">
+              📚 NASA-STD-3001 RAG
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAIN SECTION TWO-COLUMN GRID -->
+      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+        <!-- LEFT: CHAT TERMINAL & CONSOLE -->
+        <div class="card" style="display: flex; flex-direction: column; height: 750px; overflow: hidden; padding: 0;">
+          <div class="card-header" style="padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 0.6rem;">
+              <span style="font-size: 1.1rem;">💬</span>
+              <span style="font-weight: 700; font-size: 0.95rem; color: #fff;">Clinical Dialogue &amp; Autonomous Command Line</span>
+            </div>
+            <button id="btnSectionClearChat" class="btn btn-outline" style="font-size: 0.75rem; padding: 0.3rem 0.65rem;">
+              🗑️ Clear Transcript
+            </button>
+          </div>
+
+          <!-- Quick Suggestion Chips for Section -->
+          <div class="copilot-chips-container" id="sectionChipsContainer" style="padding: 0.75rem 1.25rem; border-bottom: 1px solid var(--border-color); background: rgba(0,0,0,0.15);">
+            <button class="copilot-chip" data-prompt="What is our current composite risk score?">⚡ Risk Status</button>
+            <button class="copilot-chip" data-prompt="What is our radiation dose and safe shelter route?">🛡️ Safe Shelter</button>
+            <button class="copilot-chip" data-prompt="Status of habitat centrifuge and gravity gradient">🌀 Centrifuge Sim</button>
+            <button class="copilot-chip" data-prompt="What causes SANS and intracranial pressure elevation?">🧠 SANS &amp; ICP</button>
+            <button class="copilot-chip" data-prompt="What are NASA radiation permissible exposure limits?">📖 NASA Limits</button>
+            <button class="copilot-chip" data-prompt="simulate solar storm">🔴 Solar Storm</button>
+            <button class="copilot-chip" data-prompt="actuate centrifuge countermeasures">🔒 Lock Deck</button>
+          </div>
+
+          <!-- Messages Container -->
+          <div class="copilot-messages" id="sectionCopilotMessages" style="flex: 1; padding: 1.25rem; overflow-y: auto;">
+            <!-- Initial Welcome Message -->
+            <div class="copilot-msg bot-msg">
+              <div class="msg-avatar">🩺</div>
+              <div class="msg-bubble">
+                <div class="msg-author">Aegis Flight Surgeon <span class="msg-time">Online</span></div>
+                <div class="msg-content">
+                  Greetings, Flight Officer. I am the <strong>Autonomous Flight Surgeon Copilot</strong> operating locally inside the interplanetary vehicle architecture.<br><br>
+                  Because Earth communications encounter up to <strong>20 minutes of one-way latency</strong>, I synthesize live multi-pillar sensor data, cite official NASA-STD-3001 spaceflight standards, and execute autonomous safety overrides with zero cloud dependencies.<br><br>
+                  <em>Ask me any clinical question or select a prompt chip above to begin.</em>
+                </div>
+                <div class="msg-meta">
+                  <span class="msg-citation-pill">Level 5 Autonomous Authority &bull; NASA-STD-3001 Vol 1 &amp; 2</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Gemini-Style Large Input Container -->
+          <div class="gemini-input-area">
+            <form id="sectionCopilotInputForm" class="gemini-prompt-card" onsubmit="return false;" action="javascript:void(0);">
+              <textarea 
+                id="sectionCopilotInputField" 
+                class="gemini-textarea" 
+                placeholder="Ask flight surgeon anything, or type simulation directives... (e.g. 'What is Watneys fatigue level?', 'Simulate solar storm', 'Lock habitat deck')" 
+                rows="3"
+                autocomplete="off"
+              ></textarea>
+              <div class="gemini-card-bottom-row">
+                <div class="gemini-card-hints">
+                  <span class="gemini-hint-chip" data-fill="What is our current composite risk score?">⚡ Risk Status</span>
+                  <span class="gemini-hint-chip" data-fill="What is our radiation dose and safe shelter route?">🛡️ Safe Shelter</span>
+                  <span class="gemini-hint-chip" data-fill="simulate solar storm">🔴 Solar Storm</span>
+                  <span class="gemini-hint-chip" data-fill="actuate centrifuge countermeasures">🔒 Lock Deck</span>
+                </div>
+                <button type="button" id="sectionCopilotSendBtn" class="gemini-send-btn" title="Send message (Enter)" onclick="window.sendCopilotSectionMessage &amp;&amp; window.sendCopilotSectionMessage()">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="19" x2="12" y2="5"></line>
+                    <polyline points="5 12 12 5 19 12"></polyline>
+                  </svg>
+                </button>
+              </div>
+            </form>
+            <div class="gemini-input-footer">
+              <span>⚡ Level 5 Autonomous Authority &bull; Real-time Telemetry &bull; NASA-STD-3001 Verified (&lt;2MB RAM)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: LIVE TELEMETRY & REFERENCE PANEL -->
+        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+          <!-- Live Telemetry Card -->
+          <div class="card" style="padding: 1.25rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.85rem;">
+              <span style="font-size: 0.85rem; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase;">
+                📡 Live Health Telemetry Bus
+              </span>
+              <span style="font-size: 0.7rem; color: #34d399; font-weight: 600;">● STREAM ACTIVE</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.82rem;">
+              <div style="background: rgba(255,255,255,0.02); padding: 0.6rem 0.85rem; border-radius: 6px; border: 1px solid var(--border-color);">
+                <div style="color: var(--text-secondary); font-size: 0.7rem; margin-bottom: 0.2rem;">COMPOSITE 4-PILLAR RISK SCORE</div>
+                <div style="font-weight: 700; font-size: 1.05rem; color: #fff;" id="sectionCopilotRiskScore">Calculating...</div>
+              </div>
+              <div style="background: rgba(255,255,255,0.02); padding: 0.6rem 0.85rem; border-radius: 6px; border: 1px solid var(--border-color);">
+                <div style="color: var(--text-secondary); font-size: 0.7rem; margin-bottom: 0.2rem;">RADIATION FLUX &amp; SAFE REFUGE</div>
+                <div style="font-weight: 700; color: #38bdf8;" id="sectionCopilotRadStatus">Monitoring...</div>
+              </div>
+              <div style="background: rgba(255,255,255,0.02); padding: 0.6rem 0.85rem; border-radius: 6px; border: 1px solid var(--border-color);">
+                <div style="color: var(--text-secondary); font-size: 0.7rem; margin-bottom: 0.2rem;">PASSIVE ACOUSTIC VITALS (WATNEY)</div>
+                <div style="font-weight: 700; color: #a855f7;" id="sectionCopilotVoiceStatus">Monitoring...</div>
+              </div>
+              <div style="background: rgba(255,255,255,0.02); padding: 0.6rem 0.85rem; border-radius: 6px; border: 1px solid var(--border-color);">
+                <div style="color: var(--text-secondary); font-size: 0.7rem; margin-bottom: 0.2rem;">HABITAT CENTRIFUGAL STATUS</div>
+                <div style="font-weight: 700; color: #f59e0b;" id="sectionCopilotCentrifugeStatus">Monitoring...</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Offline Knowledge Base Card -->
+          <div class="card" style="padding: 1.25rem;">
+            <div style="font-size: 0.85rem; font-weight: 700; color: #c084fc; text-transform: uppercase; margin-bottom: 0.75rem;">
+              📚 Indexed Clinical Flight Standards
+            </div>
+            <div style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.6;">
+              <ul style="margin-left: 1.1rem; margin-bottom: 0.5rem;">
+                <li><strong>NASA-STD-3001 Vol 1 &amp; 2:</strong> Permissible Exposure Limits (PEL) &amp; Acute Radiation Sickness.</li>
+                <li><strong>Space Motion Sickness (SMS):</strong> Coriolis cross-coupling &amp; Graybiel severity criteria.</li>
+                <li><strong>SANS &amp; ICP:</strong> Cephalad fluid shifts, optic disc edema, and jugular venous stasis.</li>
+                <li><strong>Frost Mechanostat:</strong> Bone mineral density microstrain thresholds.</li>
+                <li><strong>Rotational Habitats:</strong> Angular velocity &amp; Coriolis acceleration constraints.</li>
+              </ul>
+              <div style="margin-top: 0.6rem; padding: 0.5rem; background: rgba(56, 189, 248, 0.08); border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.2); font-size: 0.72rem; color: #7dd3fc;">
+                💡 <em>All standards indexed offline in &lt;2MB RAM via TF-IDF vector space with &lt;5ms retrieval latency.</em>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div> <!-- end tab-copilot -->
+
+    <!-- ===================================================================
+         TAB: DEEP SPACE COMMUNICATIONS & FEDERATED SYNC
+         =================================================================== -->
+    <div class="tab-pane" id="tab-sync">
+      <!-- Section Header -->
+      <div class="section-title-bar" style="margin-bottom: 1.25rem;">
+        <div>
+          <h2 style="display: flex; align-items: center; gap: 0.6rem; margin: 0; font-size: 1.5rem; font-weight: 800; color: #f8fafc;">
+            <span>📡</span> Deep Space Communications &amp; Federated Sync
+          </h2>
+          <div style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;">
+            Asymmetric store-and-forward telemetry buffer &bull; Autonomous edge monitoring during 20-min Mars delay &bull; Houston FedAvg aggregation
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+          <div class="status-indicator" id="syncHeaderBadge" style="background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.35);">
+            <span class="status-dot online" id="syncHeaderDot"></span>
+            <span class="status-text" id="syncHeaderStatusText" style="color: #10b981; font-weight: 700;">ONLINE [EARTH LINK ACTIVE]</span>
+          </div>
+          <button id="syncQuickToggleBtn" type="button" class="btn btn-outline" style="border-color: rgba(245, 158, 11, 0.5); color: #fbbf24;" onclick="window.toggleSyncCommsState &amp;&amp; window.toggleSyncCommsState()">
+            ⚡ Toggle Blackout
+          </button>
+        </div>
+      </div>
+
+      <!-- CRITICAL UNSYNCHRONIZED ALERT BANNER (Visible if critical events stranded offline) -->
+      <div id="unsyncedCriticalAlertBanner" class="blackout-active-banner" style="display: none; background: linear-gradient(90deg, rgba(239, 68, 68, 0.22), rgba(15, 23, 42, 0.85)); border-color: rgba(239, 68, 68, 0.55); margin-bottom: 1.25rem;">
+        <span class="pulse-blackout-beacon" style="color: #f87171;">⚠️</span>
+        <span class="blackout-banner-text" style="color: #fca5a5;">
+          <strong>ATTENTION FLIGHT SURGEON:</strong> <span id="unsyncedCritCountText">1</span> Critical Clinical Event(s) currently stored in onboard persistent queue awaiting DSN transmission window! Ground Control has not yet confirmed receipt.
+        </span>
+        <button class="btn btn-sm btn-primary" style="margin-left: auto; background: #ef4444; border: none;" onclick="window.triggerStoreForwardSync &amp;&amp; window.triggerStoreForwardSync()">
+          Attempt Force Downlink
+        </button>
+      </div>
+
+      <!-- TOP CONTROL & ACTION TOOLBAR -->
+      <div class="card" style="padding: 1rem 1.25rem; margin-bottom: 1.25rem; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.1);">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+            <button id="syncToggleCommsActionBtn" type="button" class="btn btn-outline" onclick="window.toggleSyncCommsState &amp;&amp; window.toggleSyncCommsState()" style="font-weight: 600;">
+              ⚡ Disconnect Link (Simulate Blackout)
+            </button>
+            <button id="syncForceUploadBtn" type="button" class="btn btn-primary" onclick="window.triggerStoreForwardSync &amp;&amp; window.triggerStoreForwardSync()" style="font-weight: 600;">
+              📤 Flush Pending Queue to Houston
+            </button>
+            <button id="syncTrainEdgeBtn" type="button" class="btn btn-outline" onclick="window.triggerLocalEdgeTraining &amp;&amp; window.triggerLocalEdgeTraining()" style="border-color: rgba(168, 85, 247, 0.4); color: #c084fc;">
+              🧪 Train Onboard Edge Models (Watney &amp; Vogel)
+            </button>
+            <button id="syncSimulateDropBtn" type="button" class="btn btn-outline" onclick="window.simulateTransientDrop &amp;&amp; window.simulateTransientDrop()" style="border-color: rgba(244, 63, 94, 0.4); color: #fb7185;" title="Simulate momentary carrier phase loss to demonstrate automatic retry backoff">
+              💥 Simulate DSN Drop (Retry Backoff)
+            </button>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <button id="syncRunDemoBtn" type="button" class="btn btn-primary" onclick="window.runSyncE2EDemonstration &amp;&amp; window.runSyncE2EDemonstration()" style="background: linear-gradient(135deg, #0ea5e9, #6366f1); border: none; font-weight: 700; box-shadow: 0 0 15px rgba(99, 102, 241, 0.35);">
+              🚀 1-Click E2E Mission Demo
+            </button>
+            <button id="syncResetDemoBtn" type="button" class="btn btn-outline" onclick="window.resetSyncDemo &amp;&amp; window.resetSyncDemo()" style="color: var(--text-muted); font-size: 0.8rem;" title="Reset queues and clear ground archives">
+              🔄 Reset Demo
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- METRICS CARDS GRID (6 Cards) -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
+        <!-- Card 1: Link Mode -->
+        <div class="card" style="padding: 1rem; position: relative;">
+          <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.05em;">Earth Link Status</div>
+          <div id="syncCardLinkState" style="font-size: 1.25rem; font-weight: 800; color: #10b981; margin: 0.35rem 0;">ONLINE</div>
+          <div style="font-size: 0.72rem; color: var(--text-dim); display: flex; justify-content: space-between;">
+            <span>Mars Latency:</span>
+            <span id="syncCardLatency" style="color: var(--accent-cyan); font-weight: 600;">20m (1,200s)</span>
+          </div>
+        </div>
+
+        <!-- Card 2: Pending Health Events -->
+        <div class="card" style="padding: 1rem;">
+          <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.05em;">Pending Health Events</div>
+          <div id="syncCardPendingEvents" style="font-size: 1.5rem; font-weight: 800; color: #f1f5f9; margin: 0.35rem 0;">0</div>
+          <div style="font-size: 0.72rem; color: var(--text-dim);">
+            <span id="syncCardCriticalPill" style="display: none; background: rgba(239, 68, 68, 0.2); color: #f87171; padding: 0.1rem 0.4rem; border-radius: 4px; font-weight: 700;">0 CRITICAL</span>
+            <span id="syncCardNominalPill" style="color: #94a3b8;">Buffered in local SQLite</span>
+          </div>
+        </div>
+
+        <!-- Card 3: Pending Telemetry Summaries -->
+        <div class="card" style="padding: 1rem;">
+          <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.05em;">Pending Summaries</div>
+          <div id="syncCardPendingSummaries" style="font-size: 1.5rem; font-weight: 800; color: #f1f5f9; margin: 0.35rem 0;">0</div>
+          <div style="font-size: 0.72rem; color: var(--text-dim);">Periodic snapshot rolls</div>
+        </div>
+
+        <!-- Card 4: Pending Model Updates -->
+        <div class="card" style="padding: 1rem;">
+          <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.05em;">Pending Model Updates</div>
+          <div id="syncCardPendingModels" style="font-size: 1.5rem; font-weight: 800; color: #c084fc; margin: 0.35rem 0;">0</div>
+          <div style="font-size: 0.72rem; color: var(--text-dim);">Edge parameter deltas</div>
+        </div>
+
+        <!-- Card 5: Synced Records Total -->
+        <div class="card" style="padding: 1rem;">
+          <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.05em;">Synced to Houston</div>
+          <div id="syncCardSyncedTotal" style="font-size: 1.5rem; font-weight: 800; color: #38bdf8; margin: 0.35rem 0;">0</div>
+          <div style="font-size: 0.72rem; color: var(--text-dim);">
+            <span>Last Sync: </span><span id="syncCardLastTime" style="color: #cbd5e1;">Just now</span>
+          </div>
+        </div>
+
+        <!-- Card 6: Federated Model Version -->
+        <div class="card" style="padding: 1rem;">
+          <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.05em;">Global Model Version</div>
+          <div id="syncCardModelVersion" style="font-size: 1.35rem; font-weight: 800; color: #34d399; margin: 0.35rem 0;">v1.0.0</div>
+          <div style="font-size: 0.72rem; color: var(--text-dim);">
+            <span>Round: </span><span id="syncCardModelRound" style="color: #cbd5e1; font-weight: 600;">0 (Baseline)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- DEMO CONSOLE STEP VIEWER (Appears when 1-Click demo is run) -->
+      <div id="syncDemoConsoleCard" class="card" style="display: none; padding: 1.25rem; margin-bottom: 1.25rem; background: rgba(13, 20, 36, 0.9); border: 1px solid rgba(99, 102, 241, 0.4);">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-size: 1.1rem;">🚀</span>
+            <span style="font-weight: 700; color: #a5b4fc; font-size: 0.95rem;">Reproducible 12-Step Mission Scenario Execution Log</span>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline" onclick="document.getElementById('syncDemoConsoleCard').style.display='none'">Dismiss</button>
+        </div>
+        <div id="syncDemoStepContainer" style="font-family: var(--font-mono); font-size: 0.8rem; background: rgba(0, 0, 0, 0.45); padding: 0.85rem; border-radius: 8px; max-height: 220px; overflow-y: auto; line-height: 1.6; color: #e2e8f0;">
+          <!-- Dynamically populated steps -->
+        </div>
+      </div>
+
+      <!-- MAIN SPLIT WORKSPACE: ASYMMETRIC EVENT TIMELINE & FEDERATED LEARNING HUB -->
+      <div style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+        
+        <!-- LEFT: ASYMMETRIC EVENT TIMELINE TABLE -->
+        <div class="card" style="padding: 1.25rem; display: flex; flex-direction: column;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.85rem; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+              <div style="font-weight: 800; font-size: 1rem; color: #f1f5f9; display: flex; align-items: center; gap: 0.4rem;">
+                <span>⏱️</span> Asymmetric Downlink Event Timeline
+              </div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">
+                Compares Onboard Occurrence Time (UTC) vs Houston Reception Time (UTC) &bull; Idempotent Ground Ingestion
+              </div>
+            </div>
+            <button class="btn btn-sm btn-outline" onclick="window.refreshSyncTimeline &amp;&amp; window.refreshSyncTimeline()" style="font-size: 0.75rem;">
+              🔄 Refresh
+            </button>
+          </div>
+
+          <!-- Timeline Table Wrapper -->
+          <div style="overflow-x: auto; flex: 1; max-height: 380px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.78rem; text-align: left;">
+              <thead>
+                <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.12); color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase;">
+                  <th style="padding: 0.5rem 0.6rem;">Event ID</th>
+                  <th style="padding: 0.5rem 0.6rem;">Severity</th>
+                  <th style="padding: 0.5rem 0.6rem;">Subsystem</th>
+                  <th style="padding: 0.5rem 0.6rem;">Onboard Occurrence (UTC)</th>
+                  <th style="padding: 0.5rem 0.6rem;">Houston Received (UTC)</th>
+                  <th style="padding: 0.5rem 0.6rem;">Comms Latency</th>
+                  <th style="padding: 0.5rem 0.6rem;">Status</th>
+                  <th style="padding: 0.5rem 0.6rem;">XAI (SHAP)</th>
+                </tr>
+              </thead>
+
+              <tbody id="syncEventsTableBody">
+                <tr>
+                  <td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-dim);">
+                    No events registered. Click <strong>1-Click E2E Mission Demo</strong> to simulate.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- RIGHT: FEDERATED LEARNING ARCHITECTURE HUB -->
+        <div class="card" style="padding: 1.25rem; display: flex; flex-direction: column;">
+          <div style="margin-bottom: 0.85rem;">
+            <div style="font-weight: 800; font-size: 1rem; color: #f1f5f9; display: flex; align-items: center; gap: 0.4rem;">
+              <span>🧠</span> Edge Federated Learning Hub
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">
+              Privacy-preserving edge model training &bull; Transmits parameter deltas ($\Delta W$) without raw crew audio or omics
+            </div>
+          </div>
+
+          <!-- Two Edge Clients Status Cards -->
+          <div style="display: flex; flex-direction: column; gap: 0.75rem; flex: 1;">
+            
+            <!-- Client 1: Watney -->
+            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 0.85rem;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem;">
+                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                  <span style="font-size: 0.9rem;">🧑‍🚀</span>
+                  <span style="font-weight: 700; color: #38bdf8; font-size: 0.82rem;">HERMES-EDGE-01: CDR Mark Watney</span>
+                </div>
+                <span class="real-pill" style="font-size: 0.65rem; padding: 0.1rem 0.35rem;">Airlock / EVA</span>
+              </div>
+              <div style="font-size: 0.72rem; color: var(--text-secondary); display: grid; grid-template-columns: 1fr 1fr; gap: 0.25rem;">
+                <div>Samples: <strong id="flClient1Samples" style="color: #f1f5f9;">0</strong></div>
+                <div>Local Loss: <strong id="flClient1Loss" style="color: #f1f5f9;">--</strong></div>
+              </div>
+              <div style="margin-top: 0.4rem; font-family: var(--font-mono); font-size: 0.68rem; color: #94a3b8; background: rgba(0, 0, 0, 0.3); padding: 0.35rem; border-radius: 4px;">
+                Delta: <span id="flClient1Deltas">Pending training</span>
+              </div>
+            </div>
+
+            <!-- Client 2: Vogel -->
+            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 8px; padding: 0.85rem;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem;">
+                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                  <span style="font-size: 0.9rem;">🧑‍⚕️</span>
+                  <span style="font-weight: 700; color: #c084fc; font-size: 0.82rem;">HERMES-EDGE-02: Dr. Alex Vogel</span>
+                </div>
+                <span class="real-pill" style="font-size: 0.65rem; padding: 0.1rem 0.35rem; border-color: rgba(168, 85, 247, 0.4); color: #c084fc;">Lab / Medical</span>
+              </div>
+              <div style="font-size: 0.72rem; color: var(--text-secondary); display: grid; grid-template-columns: 1fr 1fr; gap: 0.25rem;">
+                <div>Samples: <strong id="flClient2Samples" style="color: #f1f5f9;">0</strong></div>
+                <div>Local Loss: <strong id="flClient2Loss" style="color: #f1f5f9;">--</strong></div>
+              </div>
+              <div style="margin-top: 0.4rem; font-family: var(--font-mono); font-size: 0.68rem; color: #94a3b8; background: rgba(0, 0, 0, 0.3); padding: 0.35rem; border-radius: 4px;">
+                Delta: <span id="flClient2Deltas">Pending training</span>
+              </div>
+            </div>
+
+            <!-- Houston FedAvg Aggregator -->
+            <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 0.85rem;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem;">
+                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                  <span style="font-size: 0.9rem;">🌐</span>
+                  <span style="font-weight: 700; color: #34d399; font-size: 0.82rem;">Houston FedAvg Aggregator</span>
+                </div>
+                <span id="flAggregationStatusBadge" style="font-size: 0.65rem; background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 0.1rem 0.35rem; border-radius: 4px; font-weight: 700;">READY</span>
+              </div>
+              <div style="font-size: 0.72rem; color: var(--text-secondary); line-height: 1.5;">
+                <div>Active Version: <strong id="flGroundActiveVer" style="color: #34d399;">v1.0.0</strong> &bull; Total Trained: <strong id="flGroundTotalSamples" style="color: #f1f5f9;">0</strong></div>
+                <div style="color: var(--text-muted); font-size: 0.68rem; margin-top: 0.25rem;">
+                  Rule: Discards updates with stale base version, duplicate client submissions in same round, or $|\Delta w| &gt; 2.0$.
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- BOTTOM ROW: SYNCHRONIZATION ACTIVITY & AUDIT LOG -->
+      <div class="card" style="padding: 1.25rem;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+          <div style="font-weight: 700; font-size: 0.92rem; color: #f1f5f9; display: flex; align-items: center; gap: 0.4rem;">
+            <span>📜</span> Synchronization Activity &amp; State Audit Trail
+          </div>
+          <span style="font-size: 0.72rem; color: var(--text-dim);">ACID SQLite Transaction Log</span>
+        </div>
+        <div id="syncActivityLogContainer" style="max-height: 180px; overflow-y: auto; background: rgba(0, 0, 0, 0.35); border-radius: 8px; padding: 0.75rem; font-family: var(--font-mono); font-size: 0.72rem; line-height: 1.6;">
+          <div style="color: var(--text-dim); text-align: center; padding: 1rem;">No recent sync activity logged.</div>
+        </div>
+      </div>
+
+    </div> <!-- end tab-sync -->
+
+    <!-- ===================================================================
+         TAB: EXPLAINABLE AI HEALTH ALERTS USING SHAP (FEATURE B)
+         =================================================================== -->
+    <div class="tab-pane" id="tab-xai">
+      <!-- Section Header -->
+      <div class="section-title-bar" style="margin-bottom: 1.25rem;">
+        <div>
+          <h2 style="display: flex; align-items: center; gap: 0.6rem; margin: 0; font-size: 1.5rem; font-weight: 800; color: #f8fafc;">
+            <span>🔬</span> Explainable AI (SHAP) &bull; Health Alert Attribution
+          </h2>
+          <div style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;">
+            Feature B &bull; Model-specific Shapley attribution quantifying input contributions toward predicted anomaly scores without claiming biological causation.
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+          <div class="status-indicator" style="background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.35);">
+            <span class="status-dot" style="background: #fbbf24;"></span>
+            <span class="status-text" id="xaiExplainerBadgeText" style="color: #fbbf24; font-weight: 700;">SHAP ACTIVE [EXACT SHAPLEY]</span>
+          </div>
+          <button id="xaiRunDemoBtn" type="button" class="btn btn-primary" onclick="window.runXaiDemoScenario &amp;&amp; window.runXaiDemoScenario()" style="background: linear-gradient(135deg, #f59e0b, #ef4444); border: none; font-weight: 700; box-shadow: 0 0 15px rgba(245, 158, 11, 0.35);">
+            🚀 1-Click SHAP Anomaly Demo
+          </button>
+          <button id="xaiResetDemoBtn" type="button" class="btn btn-outline" onclick="window.resetXaiDemo &amp;&amp; window.resetXaiDemo()" style="color: var(--text-muted); font-size: 0.8rem;">
+            🔄 Reset
+          </button>
+        </div>
+      </div>
+
+      <!-- ACTION TOOLBAR -->
+      <div class="card" style="padding: 0.9rem 1.25rem; margin-bottom: 1.25rem; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.1);">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+            <button type="button" class="btn btn-outline" onclick="window.explainActiveDecision &amp;&amp; window.explainActiveDecision()">
+              ⚡ Explain Active Telemetry
+            </button>
+            <button type="button" class="btn btn-outline" onclick="window.openCustomXaiModal &amp;&amp; window.openCustomXaiModal()" style="border-color: rgba(56, 189, 248, 0.4); color: #38bdf8;">
+              🎛️ Test Custom Biometric Inputs
+            </button>
+            <button type="button" class="btn btn-outline" onclick="window.switchTab &amp;&amp; window.switchTab('tab-sync')" style="border-color: rgba(16, 185, 129, 0.4); color: #34d399;">
+              📡 View Deep Space Sync Queue
+            </button>
+          </div>
+          <div style="font-size: 0.75rem; color: var(--text-dim);">
+            Active Model: <strong id="xaiActiveModelVerHeader" style="color: #38bdf8;">Multimodal Anomaly v1.0.0</strong> &bull; FedAvg Round Synchronized
+          </div>
+        </div>
+      </div>
+
+      <!-- DEMO CONSOLE STEP VIEWER (Populated during 1-Click demo) -->
+      <div id="xaiDemoConsole" class="card" style="display: none; padding: 1.25rem; margin-bottom: 1.25rem; background: rgba(13, 20, 36, 0.95); border: 1px solid rgba(245, 158, 11, 0.45);">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-size: 1.1rem;">🔬</span>
+            <span style="font-weight: 700; color: #fde68a; font-size: 0.95rem;">Feature B Demonstration Workflow Console</span>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline" onclick="document.getElementById('xaiDemoConsole').style.display='none'">Dismiss</button>
+        </div>
+        <div id="xaiDemoStepContainer" style="font-family: var(--font-mono); font-size: 0.8rem; background: rgba(0, 0, 0, 0.5); padding: 0.85rem; border-radius: 8px; max-height: 220px; overflow-y: auto; line-height: 1.6; color: #e2e8f0;">
+          <!-- Steps inserted dynamically -->
+        </div>
+      </div>
+
+      <!-- MAIN EXPLANATION HERO CARD -->
+      <div class="card" id="xaiMainAlertCard" style="padding: 1.25rem; margin-bottom: 1.25rem; border-left: 4px solid var(--accent-amber);">
+        <!-- Alert Meta Header -->
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 0.85rem; margin-bottom: 1rem;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+              <span id="xaiAlertIdBadge" style="font-family: var(--font-mono); font-size: 0.85rem; font-weight: 800; background: rgba(56, 189, 248, 0.15); color: #38bdf8; padding: 0.2rem 0.55rem; border-radius: 4px; border: 1px solid rgba(56, 189, 248, 0.3);">ALERT: DEC-CURRENT</span>
+              <span id="xaiSeverityBadge" style="font-size: 0.75rem; font-weight: 800; background: rgba(239, 68, 68, 0.2); color: #f87171; padding: 0.2rem 0.55rem; border-radius: 4px;">CRITICAL ANOMALY</span>
+              <span id="xaiModelBadge" style="font-size: 0.72rem; color: #cbd5e1; background: rgba(255, 255, 255, 0.06); padding: 0.2rem 0.5rem; border-radius: 4px;">Model: Multimodal Crew Anomaly Detector v1.0.0</span>
+            </div>
+            <div id="xaiOccurrenceTimeText" style="font-size: 0.72rem; color: var(--text-dim); margin-top: 0.35rem; font-family: var(--font-mono);">
+              Generated: 2026-10-09 10:15:00 UTC &bull; Origin: Autonomous Spacecraft Edge
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span id="xaiStatusPill" style="font-size: 0.72rem; font-weight: 700; background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 0.2rem 0.5rem; border-radius: 4px;">AVAILABLE</span>
+            <span style="font-size: 0.72rem; color: var(--text-muted); font-family: var(--font-mono);">Exact Efficiency: &plusmn;0.000</span>
+          </div>
+        </div>
+
+        <!-- 4-METRICS ROW -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
+          <!-- Metric 1: Predicted Anomaly Score -->
+          <div style="background: rgba(0, 0, 0, 0.25); padding: 0.85rem; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.06);">
+            <div style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Model Anomaly Score f(x)</div>
+            <div style="display: flex; align-items: baseline; gap: 0.4rem; margin: 0.3rem 0;">
+              <span id="xaiPredictedScoreVal" style="font-size: 1.6rem; font-weight: 800; color: #f87171;">0.742</span>
+              <span style="font-size: 0.75rem; color: var(--text-dim);">/ 1.000</span>
+            </div>
+            <div style="font-size: 0.7rem; color: var(--text-dim);">Continuous model output</div>
+          </div>
+
+          <!-- Metric 2: Baseline Expectation -->
+          <div style="background: rgba(0, 0, 0, 0.25); padding: 0.85rem; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.06);">
+            <div style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Reference Baseline E[f(x)]</div>
+            <div style="display: flex; align-items: baseline; gap: 0.4rem; margin: 0.3rem 0;">
+              <span id="xaiBaseValueVal" style="font-size: 1.6rem; font-weight: 800; color: #38bdf8;">0.105</span>
+              <span style="font-size: 0.75rem; color: var(--text-dim);">Nominal State</span>
+            </div>
+            <div style="font-size: 0.7rem; color: var(--text-dim);">Expected nominal background</div>
+          </div>
+
+          <!-- Metric 3: Severity Rule -->
+          <div style="background: rgba(0, 0, 0, 0.25); padding: 0.85rem; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.06);">
+            <div style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Classification Rule</div>
+            <div id="xaiClassificationRuleText" style="font-size: 0.88rem; font-weight: 700; color: #fbbf24; margin: 0.45rem 0 0.25rem 0;">
+              Score &gt;= 0.70 [Critical Anomaly]
+            </div>
+            <div style="font-size: 0.7rem; color: var(--text-dim);">Configured mission threshold</div>
+          </div>
+
+          <!-- Metric 4: Efficiency Check -->
+          <div style="background: rgba(0, 0, 0, 0.25); padding: 0.85rem; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.06);">
+            <div style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Shapley Efficiency Check</div>
+            <div style="font-size: 0.88rem; font-weight: 700; color: #34d399; margin: 0.45rem 0 0.25rem 0; font-family: var(--font-mono);">
+              E[f(x)] + &Sigma;&phi;<sub>i</sub> = f(x)
+            </div>
+            <div id="xaiEfficiencyDetailText" style="font-size: 0.7rem; color: var(--text-dim);">
+              Error: 0.0000 (Exact additivity)
+            </div>
+          </div>
+        </div>
+
+        <!-- SHAP FEATURE ATTRIBUTION WATERFALL / BAR CHART -->
+        <div style="margin-bottom: 1.25rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; flex-wrap: wrap;">
+            <div style="font-weight: 700; font-size: 0.95rem; color: #f1f5f9; display: flex; align-items: center; gap: 0.4rem;">
+              <span>📊</span> Feature Contributions to Model Prediction (&phi;<sub>i</sub>)
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-dim); display: flex; gap: 1rem;">
+              <span style="display: flex; align-items: center; gap: 0.3rem;">
+                <span style="display: inline-block; width: 10px; height: 10px; background: #f87171; border-radius: 2px;"></span>
+                Increases Anomaly Score
+              </span>
+              <span style="display: flex; align-items: center; gap: 0.3rem;">
+                <span style="display: inline-block; width: 10px; height: 10px; background: #34d399; border-radius: 2px;"></span>
+                Mitigates / Nominal
+              </span>
+            </div>
+          </div>
+
+          <!-- Chart Rows Container -->
+          <div id="xaiWaterfallContainer" style="background: rgba(0, 0, 0, 0.35); padding: 1rem; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.06);">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- PLAIN LANGUAGE NARRATIVE & LIMITATIONS -->
+        <div style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 1rem;">
+          <!-- Narrative Box -->
+          <div style="background: rgba(0, 0, 0, 0.25); padding: 1rem; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.06);">
+            <div style="font-size: 0.75rem; font-weight: 800; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.4rem;">
+              Plain-Language Explanation (Non-Causal Model Attribution)
+            </div>
+            <p id="xaiNarrativeText" style="font-size: 0.85rem; color: #e2e8f0; line-height: 1.6; margin: 0;">
+              Model anomaly score of 0.742 was driven primarily by elevated Radiation Dose Rate (0.72 mSv/h, +0.294 model contribution) and Cognitive Strain (0.55, +0.138 model contribution), exceeding the Critical Anomaly threshold (>= 0.70).
+            </p>
+          </div>
+
+          <!-- Scientific & Medical Limitations Notice -->
+          <div style="background: rgba(245, 158, 11, 0.06); border: 1px solid rgba(245, 158, 11, 0.25); padding: 1rem; border-radius: 8px;">
+            <div style="font-size: 0.75rem; font-weight: 800; color: #fbbf24; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.4rem;">
+              Scientific &amp; Medical Prototype Notice
+            </div>
+            <p id="xaiLimitationsText" style="font-size: 0.78rem; color: #cbd5e1; line-height: 1.5; margin: 0;">
+              Operational decision-support prototype. Statistical attribution (SHAP) quantifies mathematical model feature weighting and does not establish medical causation or clinical diagnosis. Anomaly flags reflect sensor shifts relative to calibrated baseline models.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- HISTORICAL HEALTH EVENTS & SHAP AUDIT LOG -->
+      <div class="card" style="padding: 1.25rem;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.85rem; flex-wrap: wrap; gap: 0.5rem;">
+          <div>
+            <div style="font-weight: 800; font-size: 1rem; color: #f1f5f9; display: flex; align-items: center; gap: 0.4rem;">
+              <span>📜</span> Health Events SHAP Explanation Audit Trail
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">
+              Preserved across 20-min Mars communication outages &bull; Retains originating model version and exact Shapley attributions
+            </div>
+          </div>
+          <button class="btn btn-sm btn-outline" onclick="window.refreshXaiAuditTable &amp;&amp; window.refreshXaiAuditTable()">
+            🔄 Refresh Events
+          </button>
+        </div>
+
+        <div style="overflow-x: auto; max-height: 320px;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 0.78rem; text-align: left;">
+            <thead>
+              <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.12); color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase;">
+                <th style="padding: 0.5rem 0.6rem;">Event ID</th>
+                <th style="padding: 0.5rem 0.6rem;">Severity</th>
+                <th style="padding: 0.5rem 0.6rem;">Subsystem</th>
+                <th style="padding: 0.5rem 0.6rem;">Occurrence Time (UTC)</th>
+                <th style="padding: 0.5rem 0.6rem;">Model Version</th>
+                <th style="padding: 0.5rem 0.6rem;">Top SHAP Driver</th>
+                <th style="padding: 0.5rem 0.6rem;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="xaiAuditTableBody">
+              <tr>
+                <td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-dim);">
+                  Loading health event explanations...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div> <!-- end tab-xai -->
+
+    </main>
+  </div> <!-- end workspace-layout -->
+
+  <!-- FOOTER -->
+  <footer class="app-footer">
+    <div>Aegis-DeepSpace: Deep-Space Health Architecture &bull; Designed for 20-min Mars Comms Latency</div>
+    <div class="footer-links">
+      <span>Dijkstra Habitat Routing</span>
+      <span>•</span>
+      <span>Acoustic Vitals &amp; Digital Twin</span>
+      <span>•</span>
+      <span>Autonomous Decision Fusion</span>
+    </div>
+  </footer>
+</div>
+
+  <!-- ===================================================================
+       AUTONOMOUS AI FLIGHT SURGEON COPILOT (LOW-RESOURCE CHATBOT)
+       =================================================================== -->
+  <div class="copilot-widget" id="copilotWidget">
+    <!-- Floating Launcher Trigger Button -->
+    <button class="copilot-launcher-btn" id="copilotLauncherBtn" aria-label="Open AI Flight Surgeon Copilot">
+      <span class="launcher-icon">🩺</span>
+      <div class="launcher-label-box">
+        <span class="launcher-title">FLIGHT SURGEON COPILOT</span>
+        <span class="launcher-sub">Level 5 Autonomous AI</span>
+      </div>
+      <span class="launcher-status-dot"></span>
+    </button>
+
+    <!-- Floating Glassmorphic Chat Window -->
+    <div class="copilot-chat-window" id="copilotChatWindow" style="display: none;">
+      <!-- Window Header -->
+      <div class="copilot-header">
+        <div class="copilot-header-info">
+          <div class="copilot-header-title-row">
+            <span class="ch-icon">🩺</span>
+            <h4>FLIGHT SURGEON COPILOT</h4>
+            <span class="ch-badge">OFFLINE • LEVEL 5</span>
+          </div>
+          <div class="copilot-header-subtitle">Edge Telemetry Synthesis &bull; NASA-STD-3001 Protocol Engine</div>
+        </div>
+        <div class="copilot-header-actions">
+          <button class="ch-btn" id="btnCopilotClear" title="Clear conversation">🗑️</button>
+          <button class="ch-btn close-btn" id="btnCopilotClose" title="Minimize Copilot">✕</button>
+        </div>
+      </div>
+
+      <!-- Quick Suggestion Chips Strip -->
+      <div class="copilot-chips-container" id="copilotChipsContainer">
+        <button class="copilot-chip" data-prompt="What is our current composite risk score?">⚡ Risk Status</button>
+        <button class="copilot-chip" data-prompt="What is our radiation dose and safe shelter route?">🛡️ Safe Shelter</button>
+        <button class="copilot-chip" data-prompt="Status of habitat centrifuge and gravity gradient">🌀 Centrifuge Sim</button>
+        <button class="copilot-chip" data-prompt="What causes SANS and intracranial pressure elevation?">🧠 SANS &amp; ICP</button>
+        <button class="copilot-chip" data-prompt="What are NASA radiation permissible exposure limits?">📖 NASA Limits</button>
+        <button class="copilot-chip" data-prompt="simulate solar storm">🔴 Solar Storm</button>
+      </div>
+
+      <!-- Scrollable Message Transcript -->
+      <div class="copilot-messages" id="copilotMessages">
+        <!-- Initial Welcome Message from Copilot -->
+        <div class="copilot-msg bot-msg">
+          <div class="msg-avatar">🩺</div>
+          <div class="msg-bubble">
+            <div class="msg-author">Aegis Flight Surgeon <span class="msg-time">Online</span></div>
+            <div class="msg-content">
+              Greetings, Officer. I am the <strong>Autonomous AI Flight Surgeon Copilot</strong> operating with zero cloud latency during our 20-minute Mars communication delay.<br><br>
+              You can query live spacecraft telemetry, ask clinical NASA questions, inspect centrifuge Coriolis shear, or execute simulation controls. How can I assist?
+            </div>
+            <div class="msg-meta">
+              <span class="msg-citation-pill">Level 5 Autonomous Authority &bull; NASA-STD-3001</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gemini-Style Input Bar for Floating Drawer -->
+      <form class="gemini-input-capsule floating-capsule" id="copilotInputForm" onsubmit="return false;" action="javascript:void(0);">
+        <input 
+          type="text" 
+          id="copilotInputField" 
+          class="gemini-input" 
+          placeholder="Ask flight surgeon or type command..." 
+          autocomplete="off"
+        />
+        <button type="button" id="copilotSendBtn" class="gemini-send-btn" title="Send message (Enter)" onclick="window.sendCopilotFloatingMessage &amp;&amp; window.sendCopilotFloatingMessage()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="19" x2="12" y2="5"></line>
+            <polyline points="5 12 12 5 19 12"></polyline>
+          </svg>
+        </button>
+      </form>
+    </div>
   </div>
 
-  <script src="/static/app.js"></script>
+  <!-- NASA-STD-3001 FLIGHT SURGEON MEDICAL EVENT DOSSIER (MED-B) MODAL -->
+  <div class="med-brief-modal-overlay" id="nasaMedBriefModal" style="display: none;">
+    <div class="med-brief-modal-content">
+      <div class="med-brief-header">
+        <div class="med-brief-title-group">
+          <div class="nasa-crest-badge">
+            <span class="nasa-crest-text">NASA</span>
+            <span class="nasa-crest-sub">MED-B</span>
+          </div>
+          <div>
+            <h2 class="med-brief-modal-title">NASA Flight Surgeon Medical Event Dossier</h2>
+            <p class="med-brief-modal-subtitle">NASA-STD-3001 Compliant &bull; Autonomous Deep-Space Telemetry Packet</p>
+          </div>
+        </div>
+        <div class="med-brief-header-actions">
+          <button class="modal-close-btn" id="closeMedBriefBtn" title="Close Dossier">&times;</button>
+        </div>
+      </div>
+
+      <!-- Dossier Metadata Strip -->
+      <div class="med-brief-meta-strip">
+        <div class="meta-item"><span class="meta-label">DOSSIER ID:</span> <span class="meta-val" id="dossierIdVal">MEDB-20261008-0001</span></div>
+        <div class="meta-item"><span class="meta-label">MISSION CLOCK:</span> <span class="meta-val" id="dossierMetVal">MET T+142d 08:34:12</span></div>
+        <div class="meta-item"><span class="meta-label">LINK STATUS:</span> <span class="meta-val" id="dossierCommsVal">ONLINE [EARTH DSN]</span></div>
+        <div class="meta-item"><span class="meta-label">SHA-256 HASH:</span> <span class="meta-val code-font" id="dossierChecksumVal">A49F...</span></div>
+      </div>
+
+      <!-- Quick Metrics Highlights -->
+      <div class="med-brief-chips-row">
+        <div class="brief-chip" id="chipRisk">
+          <span class="chip-label">TRIAGE LEVEL</span>
+          <span class="chip-val" id="briefChipRiskVal">LOW (0.10)</span>
+        </div>
+        <div class="brief-chip">
+          <span class="chip-label">P1 RADIATION</span>
+          <span class="chip-val" id="briefChipRadVal">0.02 mSv/h</span>
+        </div>
+        <div class="brief-chip">
+          <span class="chip-label">P2 VOCAL DRIFT</span>
+          <span class="chip-val" id="briefChipVoiceVal">0.4 σ</span>
+        </div>
+        <div class="brief-chip">
+          <span class="chip-label">P3 ARED DEFICIT</span>
+          <span class="chip-val" id="briefChipTwinVal">0 Days</span>
+        </div>
+        <div class="brief-chip">
+          <span class="chip-label">GRAVITY STATE</span>
+          <span class="chip-val" id="briefChipGravVal">0.38g (Mars AG)</span>
+        </div>
+      </div>
+
+      <!-- Scrollable Document Container -->
+      <div class="med-brief-body" id="medBriefBody">
+        <pre class="med-brief-doc-view" id="medBriefDocText">Synthesizing certified NASA flight debriefing...</pre>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="med-brief-footer">
+        <div class="footer-left-status">
+          <span class="status-pulse-dot" style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10b981; margin-right:6px;"></span>
+          <span id="dossierDsnStatus">DEEP SPACE NETWORK BUFFER READY</span>
+        </div>
+        <div class="footer-btns">
+          <button class="btn btn-outline" id="copyDossierBtn" title="Copy raw briefing to clipboard">
+            📋 Copy to Clipboard
+          </button>
+          <a class="btn btn-primary" id="downloadDossierBtn" href="/api/mission/dossier/download" target="_blank" download title="Download official Markdown file">
+            💾 Download .md
+          </a>
+          <button class="btn btn-secondary" id="printDossierBtn" title="Print document">
+            🖨️ Print
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AEGIS-DEEPSPACE SYSTEM INFORMATION & MISSION ARCHITECTURE MODAL -->
+  <div class="med-brief-modal-overlay" id="aegisSystemInfoModal" style="display: none;">
+    <div class="med-brief-modal-content" style="max-width: 920px;">
+      <div class="med-brief-header">
+        <div class="med-brief-title-group">
+          <div class="nasa-crest-badge" style="background: rgba(52, 211, 153, 0.15); border-color: rgba(52, 211, 153, 0.4); color: #34d399;">
+            <span class="nasa-crest-text">AEGIS</span>
+            <span class="nasa-crest-sub">INFO</span>
+          </div>
+          <div>
+            <h2 class="med-brief-modal-title">Aegis-DeepSpace: System Architecture &amp; Mission Overview</h2>
+            <p class="med-brief-modal-subtitle">NASA Space Apps Challenge &bull; Autonomous AI Flight Surgeon Platform &bull; Mars Transit Health Shield</p>
+          </div>
+        </div>
+        <div class="med-brief-header-actions">
+          <button class="modal-close-btn" id="closeSystemInfoBtn" title="Close System Info">&times;</button>
+        </div>
+      </div>
+
+      <!-- Quick Metrics Highlights -->
+      <div class="med-brief-chips-row">
+        <div class="brief-chip" style="border-color: rgba(52, 211, 153, 0.4);">
+          <span class="chip-label">AUTONOMY TIER</span>
+          <span class="chip-val" style="color: #34d399;">Level-5 Edge (100% Offline)</span>
+        </div>
+        <div class="brief-chip">
+          <span class="chip-label">RADIO LATENCY</span>
+          <span class="chip-val">Up to 20m Delay (Mars)</span>
+        </div>
+        <div class="brief-chip">
+          <span class="chip-label">CORE PILLARS</span>
+          <span class="chip-val">4 Implemented Pillars</span>
+        </div>
+        <div class="brief-chip">
+          <span class="chip-label">CLINICAL STANDARDS</span>
+          <span class="chip-val">NASA-STD-3001 &bull; HRP</span>
+        </div>
+        <div class="brief-chip">
+          <span class="chip-label">SIMULATOR ENGINES</span>
+          <span class="chip-val">Centrifuge + What-If</span>
+        </div>
+      </div>
+
+      <!-- Scrollable Document Container -->
+      <div class="med-brief-body" style="max-height: 58vh; overflow-y: auto; padding: 1.5rem 1.8rem; line-height: 1.65; color: #e2e8f0;">
+        <div style="background: rgba(56, 189, 248, 0.08); border-left: 4px solid var(--accent-cyan); padding: 0.9rem 1.1rem; border-radius: 4px; margin-bottom: 1.4rem;">
+          <h4 style="margin: 0 0 0.3rem 0; color: #38bdf8; font-size: 0.95rem; letter-spacing: 0.5px;">MISSION OPERATIONAL PROBLEM</h4>
+          <p style="margin: 0; font-size: 0.88rem; color: #cbd5e1;">
+            During long-duration crewed interplanetary transit between Earth and Mars, radio transmission delay spans <strong>4 to 22 minutes one-way (8 to 44 minutes round-trip)</strong>. In acute crises—such as Solar Particle Event (SPE) radiation storms, insidious hypoxic leaks, or sudden rotational habitat despin shocks—real-time telemedicine consultation with Houston Flight Surgeons is physically impossible. <strong>Aegis-DeepSpace</strong> serves as an auditable, deterministic, multimodal edge Flight Surgeon safeguarding astronaut lives locally with zero reliance on cloud or Earth infrastructure.
+          </p>
+        </div>
+
+        <h3 style="color: #fff; font-size: 1.05rem; margin: 1.2rem 0 0.6rem 0; display: flex; align-items: center; gap: 0.5rem;">
+          <span>🏛️</span> Four Foundational Architectural Pillars (All Real Implementations)
+        </h3>
+
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1.4rem;">
+          <!-- Pillar 1 -->
+          <div style="background: rgba(13, 20, 36, 0.85); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+              <span style="font-size: 0.75rem; font-weight: 800; color: #34d399; background: rgba(16, 185, 129, 0.15); padding: 0.15rem 0.45rem; border-radius: 4px;">PILLAR 1: REAL</span>
+              <span style="font-size: 0.72rem; color: #94a3b8;">Environmental Defense</span>
+            </div>
+            <h4 style="margin: 0 0 0.4rem 0; color: #fff; font-size: 0.92rem;">Radiation Safe-Route</h4>
+            <p style="margin: 0; font-size: 0.82rem; color: #94a3b8;">
+              Models spacecraft topology as a weighted graph (NetworkX) across 4 habitat compartments (Command Deck 20% shielded, Storm Shelter 95%, Science Lab 60%, Airlock 10%). Calculates real-time compartment dose mapping and runs Dijkstra pathfinding to minimize cumulative Sievert transit exposure during Solar Particle Events (SPE/CME). Real integration with NASA DONKI space weather telemetry.
+            </p>
+          </div>
+
+          <!-- Pillar 2 -->
+          <div style="background: rgba(13, 20, 36, 0.85); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+              <span style="font-size: 0.75rem; font-weight: 800; color: #34d399; background: rgba(16, 185, 129, 0.15); padding: 0.15rem 0.45rem; border-radius: 4px;">PILLAR 2: REAL</span>
+              <span style="font-size: 0.72rem; color: #94a3b8;">Passive Biometrics</span>
+            </div>
+            <h4 style="margin: 0 0 0.4rem 0; color: #fff; font-size: 0.92rem;">Voice Vitals</h4>
+            <p style="margin: 0; font-size: 0.82rem; color: #94a3b8;">
+              Passive, non-invasive crew acoustic monitoring. Extracts 13-dimensional MFCC acoustic prosody via 1D-CNN to detect vocal fatigue and early sub-clinical hypoxia; generates transcripts using OpenAI Whisper STT (<code style="color:#38bdf8;">tiny.en</code>); and analyzes mood valence and cognitive strain using DistilBERT NLP with personalized baseline z-score drift tracking (&mu; &plusmn; &sigma;).
+            </p>
+          </div>
+
+          <!-- Pillar 3 -->
+          <div style="background: rgba(13, 20, 36, 0.85); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+              <span style="font-size: 0.75rem; font-weight: 800; color: #34d399; background: rgba(16, 185, 129, 0.15); padding: 0.15rem 0.45rem; border-radius: 4px;">PILLAR 3: REAL</span>
+              <span style="font-size: 0.72rem; color: #94a3b8;">Predictive Twin</span>
+            </div>
+            <h4 style="margin: 0 0 0.4rem 0; color: #fff; font-size: 0.92rem;">Astro-Twin Musculoskeletal</h4>
+            <p style="margin: 0; font-size: 0.82rem; color: #94a3b8;">
+              Biomechanical Frost's Mechanostat ODE coupled with a Scikit-Learn Gradient Boosting Regressor trained on 180-day ISS ARED astronaut mission data. Simulates 30-day forward bone mineral density (BMD) loss and prescribes adaptive compensatory countermeasures (work deficit kg/N-m, volume surge %, and ARED barbell squat/deadlift regimens) when crew is confined to storm shelter.
+            </p>
+          </div>
+
+          <!-- Pillar 4 -->
+          <div style="background: rgba(13, 20, 36, 0.85); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+              <span style="font-size: 0.75rem; font-weight: 800; color: #34d399; background: rgba(16, 185, 129, 0.15); padding: 0.15rem 0.45rem; border-radius: 4px;">PILLAR 4: REAL</span>
+              <span style="font-size: 0.72rem; color: #94a3b8;">Autonomous Decision</span>
+            </div>
+            <h4 style="margin: 0 0 0.4rem 0; color: #fff; font-size: 0.92rem;">Autonomous Decision Engine</h4>
+            <p style="margin: 0; font-size: 0.82rem; color: #94a3b8;">
+              Deterministic risk fusion fusing P1+P2+P3 into a composite score (0.05-0.99). Implements multi-signal synergy escalation (+0.10 to +0.20 compound multiplier), flags closed-loop cross-pillar feedback loops (shelter isolation driving twin deconditioning), queries local NASA-STD-3001 evidence citations offline, and executes counterfactual What-If evacuation delay simulations.
+            </p>
+          </div>
+        </div>
+
+        <h3 style="color: #fff; font-size: 1.05rem; margin: 1.2rem 0 0.6rem 0; display: flex; align-items: center; gap: 0.5rem;">
+          <span>⚡</span> Advanced Mission Features
+        </h3>
+
+        <ul style="margin: 0 0 1.2rem 1.2rem; padding: 0; font-size: 0.86rem; color: #cbd5e1; line-height: 1.6;">
+          <li><strong>AG Centrifuge Microgravity Shock Simulator:</strong> Simulates emergency centrifugal habitat ring spin-down (0.38g &rarr; 0.0g in 90 seconds) with Coriolis angular cross-coupling shear (&alpha;<sub>c</sub> = 2&omega; &times; &omega;<sub>head</sub>), cephalad fluid redistribution (+850 mL/min), CVP/ICP spikes, Graybiel SMS index, and autonomous Level-5 medical triage (magnetic deck locks, pneumatic baffles, Promethazine/Ondansetron needle-free dispensers).</li>
+          <li><strong>NASA Flight Surgeon Medical Event Dossier (MED-B):</strong> One-click generation of certified NASA-STD-3001 compliant medical debrief packets with SHA-256 telemetry verification hash, multi-pillar clinical diagnostics, and exportable Houston Deep Space Network Markdown (<code style="color:#38bdf8;">.md</code>) packets.</li>
+          <li><strong>Offline AI Copilot:</strong> Ultra-low resource (&lt;2MB RAM) clinical RAG chatbot powered by TF-IDF cosine similarity search across NASA-STD-3001 clinical standards, real-time telemetry inspector, and command dispatcher.</li>
+          <li><strong>7 Mission Scenarios:</strong> Nominal Baseline, Solar Storm (SPE), Voice Anomaly, Combined Anomaly, Offline Blackout (Mars 20m Delay), Uncertain/Noisy Data, and Centrifugal Despin Shock.</li>
+        </ul>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="med-brief-footer">
+        <div class="footer-left-status">
+          <span class="status-pulse-dot" style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10b981; margin-right:6px;"></span>
+          <span style="font-size: 0.78rem; color: #94a3b8;">AEGIS-DEEPSPACE ARCHITECTURE SPECIFICATION v2.4</span>
+        </div>
+        <div class="footer-btns">
+          <button class="btn btn-outline" id="sysInfoOpenEngineBtn" type="button">
+            🧠 Open Decision Engine
+          </button>
+          <button class="btn btn-outline" id="sysInfoOpenCopilotBtn" type="button" style="border-color: rgba(56, 189, 248, 0.4); color: #38bdf8;">
+            🩺 Consult AI Copilot
+          </button>
+          <button class="btn btn-secondary" id="closeSystemInfoFooterBtn" type="button">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js?v=4.2"></script>
 </body>
 </html>
