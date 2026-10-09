@@ -8,3 +8,7 @@ Untitled-1.c
 *.exe
 .idea/
 .vscode/
+.venv/
+uploads/
+*.db
+data/*.db

@@ -22,14 +22,55 @@ from aegis_deepspace.models import VoiceVitalsState
 from aegis_deepspace.providers import BaseVoiceVitalsProvider
 
 # Default astronaut baseline for z-score drift
+# Default astronaut baseline for z-score drift
 DEFAULT_BASELINE = {
+    "name": "Cmdr. Shepard",
     "fatigue_mean": 0.20,
     "fatigue_std": 0.05,
     "hypoxia_mean": 0.10,
     "hypoxia_std": 0.02,
-    "mood_mean": 0.75,
-    "mood_std": 0.15
+    "mood_mean": 0.85,
+    "mood_std": 0.10
 }
+
+
+def load_astronaut_profiles() -> Dict[str, Any]:
+    """Loads astronaut historical baselines from astronaut_profiles.json."""
+    db_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "astronaut_profiles.json"))
+    if os.path.exists(db_path):
+        try:
+            with open(db_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {
+        "ASTRO-01": DEFAULT_BASELINE.copy(),
+        "ASTRO-02": {
+            "name": "Dr. Vance",
+            "fatigue_mean": 0.35,
+            "fatigue_std": 0.08,
+            "hypoxia_mean": 0.12,
+            "hypoxia_std": 0.03,
+            "mood_mean": 0.60,
+            "mood_std": 0.20
+        }
+    }
+
+
+def list_available_audio_logs() -> list:
+    """Discovers available .wav audio logs in project root and uploads directory."""
+    root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    files = []
+    candidates = ["normal_log.wav", "fatigued_log.wav", "stressed_log.wav", "test_audio.wav"]
+    for c in candidates:
+        if os.path.exists(os.path.join(root_dir, c)):
+            files.append(c)
+    uploads_dir = os.path.join(root_dir, "uploads")
+    if os.path.exists(uploads_dir):
+        for f in os.listdir(uploads_dir):
+            if f.endswith(".wav"):
+                files.append(f"uploads/{f}")
+    return files
 
 
 class RealVoiceVitalsProvider(BaseVoiceVitalsProvider):
@@ -37,11 +78,14 @@ class RealVoiceVitalsProvider(BaseVoiceVitalsProvider):
 
     def __init__(self, audio_file_path: Optional[str] = None):
         self.default_audio_path = audio_file_path or os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "test_audio.wav")
+            os.path.join(os.path.dirname(__file__), "..", "normal_log.wav")
         )
-        self.baseline = DEFAULT_BASELINE.copy()
+        self.profiles = load_astronaut_profiles()
+        self.current_crew_id = "ASTRO-01"
+        self.baseline = self.profiles.get(self.current_crew_id, DEFAULT_BASELINE).copy()
         self._engine = None
         self._last_analysis: Optional[Dict[str, Any]] = None
+        self._analysis_cache: Dict[str, Dict[str, Any]] = {}
 
     def _get_engine(self):
         """Lazy-loads VoiceVitalsFusionEngine so server startup remains fast."""
@@ -51,16 +95,46 @@ class RealVoiceVitalsProvider(BaseVoiceVitalsProvider):
             self._engine = VoiceVitalsFusionEngine()
         return self._engine
 
-    def analyze_audio(self, audio_path: Optional[str] = None) -> Dict[str, Any]:
+    def analyze_audio(self, audio_path: Optional[str] = None, crew_id: str = "ASTRO-01") -> Dict[str, Any]:
         """Runs the real acoustic CNN, Whisper STT, and sentiment pipeline on an audio file."""
         target_path = audio_path or self.default_audio_path
+        if not os.path.isabs(target_path):
+            target_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", target_path))
+
         if not os.path.exists(target_path):
-            raise FileNotFoundError(f"Audio file not found: {target_path}")
+            # Fallback to test_audio.wav if target not found
+            fallback_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "test_audio.wav"))
+            if os.path.exists(fallback_path):
+                target_path = fallback_path
+            else:
+                raise FileNotFoundError(f"Audio file not found: {target_path}")
+
+        cache_key = f"{target_path}:{crew_id}"
+        if cache_key in self._analysis_cache:
+            self._last_analysis = self._analysis_cache[cache_key]
+            return self._last_analysis
+
+        self.profiles = load_astronaut_profiles()
+        self.current_crew_id = crew_id or "ASTRO-01"
+        self.baseline = self.profiles.get(self.current_crew_id, DEFAULT_BASELINE).copy()
 
         engine = self._get_engine()
         raw_json_str = engine.process_daily_log(target_path, self.baseline)
         parsed = json.loads(raw_json_str)
+
+        tel = parsed.get("telemetry", {})
+        mood = float(tel.get("mood_valence", 0.0))
+        fatigue = float(tel.get("acoustic_fatigue_score", 0.1))
+        # Derive cognitive strain
+        tel["cognitive_strain"] = round(min(1.0, max(0.0, (1.0 - mood) / 2.0 * 0.7 + fatigue * 0.3)), 2)
+
+        parsed["crew_id"] = self.current_crew_id
+        parsed["astronaut_name"] = self.baseline.get("name", self.current_crew_id)
+        parsed["audio_file"] = os.path.basename(target_path)
+        parsed["baseline_used"] = self.baseline
+
         self._last_analysis = parsed
+        self._analysis_cache[cache_key] = parsed
         return parsed
 
     def get_voice_vitals(self, scenario: str = "normal") -> VoiceVitalsState:
@@ -83,9 +157,12 @@ class RealVoiceVitalsProvider(BaseVoiceVitalsProvider):
                 confidence=0.89
             )
         elif scenario in ["voice_anomaly", "combined_anomaly", "offline_blackout"]:
-            # Run the real ML models on test_audio.wav (which contains real fatigue/strain voice)
+            # Run the real ML models on fatigued_log.wav (which contains real fatigue/strain voice)
             try:
-                analysis = self.analyze_audio()
+                fatigued_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "fatigued_log.wav"))
+                if not os.path.exists(fatigued_path):
+                    fatigued_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "test_audio.wav"))
+                analysis = self.analyze_audio(fatigued_path)
                 telemetry = analysis.get("telemetry", {})
                 anomalies = analysis.get("anomalies", {})
                 z_scores = anomalies.get("z_scores", {})
@@ -93,12 +170,13 @@ class RealVoiceVitalsProvider(BaseVoiceVitalsProvider):
                 fatigue = float(telemetry.get("acoustic_fatigue_score", 0.68))
                 hypoxia = float(telemetry.get("acoustic_hypoxia_score", 0.18))
                 mood = float(telemetry.get("mood_valence", -0.85))
-                # Cognitive strain derived from negative mood valence and fatigue drift
-                cognitive_strain = round(min(1.0, max(0.0, (1.0 - mood) / 2.0 * 0.7 + fatigue * 0.3)), 2)
+                # Cognitive strain derived from acoustic fatigue score and sentiment drift
+                raw_strain = max(0.55, (1.0 - mood) / 2.0 * 0.4 + fatigue * 0.6)
+                cognitive_strain = round(min(1.0, max(0.0, raw_strain)), 2)
 
                 # Clamp max sigma to reasonable range for display (e.g. z-score up to 2.8)
                 fatigue_sigma = float(z_scores.get("fatigue_sigma", 2.4))
-                reported_sigma = round(min(3.5, max(1.5, fatigue_sigma / 4.0)), 1)
+                reported_sigma = round(min(3.5, max(1.5, fatigue_sigma / 4.0 if fatigue_sigma > 4.0 else fatigue_sigma)), 1)
 
                 if scenario == "combined_anomaly":
                     # Elevated hypoxia marker in combined anomaly

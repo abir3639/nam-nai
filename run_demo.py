@@ -74,7 +74,7 @@ def run_cli_demo():
 def start_server(host: str = "127.0.0.1", port: int = 8000):
     """Starts the FastAPI web server."""
     print(f"Starting Aegis-DeepSpace Flight Surgeon Dashboard on http://{host}:{port}")
-    uvicorn.run("aegis_deepspace.server:app", host=host, port=port, reload=False)
+    uvicorn.run("aegis_deepspace.server:app", host=host, port=port, reload=True)
 
 
 if __name__ == "__main__":
