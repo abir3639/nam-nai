@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Aegis-DeepSpace | Autonomous Flight Surgeon Architecture</title>
-  <link rel="stylesheet" href="/static/styles.css?v=6.0">
+  <link rel="stylesheet" href="/static/styles.css?v=7.0">
   <style>
     /* Critical stacking context fix: Ensure top dropdowns are ALWAYS in front of all page text */
     .mission-header {
@@ -53,6 +53,18 @@
       max-width: 92vw !important;
       max-height: calc(100vh - 120px) !important;
       overflow-y: auto !important;
+    }
+    @media (max-width: 768px) {
+      .scenario-dropdown-menu,
+      .views-dropdown-menu {
+        position: fixed !important;
+        top: 80px !important;
+        left: 0.5rem !important;
+        right: 0.5rem !important;
+        width: auto !important;
+        max-width: calc(100vw - 1rem) !important;
+        max-height: 75vh !important;
+      }
     }
     .disclaimer-banner {
       position: relative !important;
@@ -1338,7 +1350,7 @@
         <div class="controls-bar" style="display: flex; flex-direction: column; gap: 1rem; padding: 1.25rem;">
           <div style="display: flex; gap: 1rem; flex-wrap: wrap; width: 100%; align-items: flex-end;">
             <!-- Astronaut Profile Baseline Selector -->
-            <div class="control-group" style="min-width: 260px;">
+            <div class="control-group" style="flex: 1 1 240px; min-width: 0;">
               <label for="p2AstroSelect">Astronaut Medical Baseline:</label>
               <select id="p2AstroSelect" class="select-input">
                 <option value="ASTRO-01" selected>ASTRO-01 &bull; Cmdr. Shepard (Nominal Rest Baseline)</option>
@@ -1347,7 +1359,7 @@
             </div>
 
             <!-- Dynamic Audio File Selector (from GitHub / local) -->
-            <div class="control-group" style="flex: 1; min-width: 320px;">
+            <div class="control-group" style="flex: 2 1 240px; min-width: 0;">
               <label for="p2AudioSelect">Mission Audio Log File:</label>
               <select id="p2AudioSelect" class="select-input">
                 <option value="normal_log.wav" selected>normal_log.wav (Cmdr. Shepard - Rested Check-in, Systems Green)</option>
@@ -3329,6 +3341,6 @@
     </div>
   </div>
 
-  <script src="/static/app.js?v=4.2"></script>
+  <script src="/static/app.js?v=5.0"></script>
 </body>
 </html>

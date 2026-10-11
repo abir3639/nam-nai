@@ -1114,17 +1114,43 @@ body {
 @media (max-width: 960px) {
   .workspace-layout {
     flex-direction: column;
+    align-items: stretch;
+    width: 100%;
   }
   .sidebar-nav {
     width: 100%;
     position: static;
+    margin-bottom: 0.85rem;
   }
   .sidebar-menu {
     flex-direction: row;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 0.4rem;
+    padding: 0.2rem 0.1rem 0.5rem 0.1rem;
+    margin: 0;
+  }
+  .sidebar-menu::-webkit-scrollbar {
+    display: none;
   }
   .sidebar-menu .nav-tab-btn {
+    flex: 0 0 auto;
     width: auto;
+    white-space: nowrap;
+    padding: 0.45rem 0.85rem;
+    font-size: 0.78rem;
+    border-radius: 999px;
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    transform: none !important;
+  }
+  .sidebar-menu .nav-tab-btn:hover,
+  .sidebar-menu .nav-tab-btn.active {
+    transform: none !important;
   }
   .sidebar-system-summary {
     display: none;
@@ -3188,40 +3214,1177 @@ body {
   }
 }
 
+@media (max-width: 900px) {
+  /* Simulator Main Grid */
+  .sim-main-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.25rem !important;
+  }
+  .sim-gauge-container {
+    grid-template-columns: 1fr !important;
+    justify-items: center !important;
+    text-align: center !important;
+    gap: 1rem !important;
+  }
+  .sim-meter-visual {
+    margin: 0 auto !important;
+  }
+  .sim-two-cols {
+    grid-template-columns: 1fr !important;
+  }
+  .sim-impact-grid {
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important;
+  }
+
+  /* Dedicated AI Copilot Tab (Tab 7) */
+  #tab-copilot > div[style*="grid-template-columns: 2fr 1fr"] {
+    grid-template-columns: 1fr !important;
+    gap: 1.25rem !important;
+  }
+  #tab-copilot .card[style*="height: 750px"] {
+    height: 540px !important;
+  }
+
+  /* Federated Sync Tab (Tab 8) */
+  #tab-sync > div[style*="grid-template-columns: 1.4fr 1fr"] {
+    grid-template-columns: 1fr !important;
+    gap: 1.25rem !important;
+  }
+
+  /* Explainable AI Tab (Tab 9) */
+  #tab-xai div[style*="grid-template-columns: 1.3fr 1fr"] {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+}
+
 @media (max-width: 768px) {
+  /* Universal mobile container & scroll constraints */
+  html, body {
+    overflow-x: hidden !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+  }
+  .app-container {
+    padding: 0.75rem 0.5rem !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Prevent iOS Safari / Chrome unwanted auto-zoom on input focus */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+
+  /* Header mobile layout */
   .mission-header {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    padding: 0.75rem 0.85rem !important;
+    gap: 0.75rem !important;
+    border-radius: var(--radius-md) !important;
+  }
+  .logo-area {
+    gap: 0.6rem !important;
+    align-items: center !important;
+  }
+  .beacon-orbit-svg {
+    width: 36px !important;
+    height: 36px !important;
+  }
+  .mission-crest {
+    padding: 0.2rem 0.45rem !important;
+  }
+  .mission-title h1 {
+    font-size: 1.18rem !important;
+    line-height: 1.2 !important;
+  }
+  .mission-title .subtitle {
+    font-size: 0.72rem !important;
   }
   .header-controls {
-    justify-content: space-between;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
   }
+  .dropdown-wrapper {
+    width: 100% !important;
+  }
+  .scenario-trigger-btn {
+    width: 100% !important;
+    justify-content: space-between !important;
+    padding: 0.5rem 0.75rem !important;
+  }
+  .trigger-label-group {
+    text-align: left !important;
+  }
+  .trigger-title {
+    font-size: 0.8rem !important;
+    white-space: normal !important;
+  }
+  .header-action-group {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0.4rem !important;
+    width: 100% !important;
+    justify-content: flex-start !important;
+  }
+  .header-action-group .btn {
+    flex: 1 1 calc(50% - 0.25rem) !important;
+    min-width: 130px !important;
+    justify-content: center !important;
+    text-align: center !important;
+    font-size: 0.75rem !important;
+    padding: 0.45rem 0.5rem !important;
+  }
+  .status-indicator {
+    flex: 1 1 100% !important;
+    justify-content: center !important;
+    font-size: 0.72rem !important;
+    padding: 0.4rem !important;
+  }
+  .telemetry-age {
+    flex: 1 1 100% !important;
+    text-align: center !important;
+    justify-content: center !important;
+    font-size: 0.7rem !important;
+    margin-top: 0.15rem !important;
+  }
+
+  /* Disclaimer Banner */
+  .disclaimer-banner {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    border-radius: var(--radius-md) !important;
+    padding: 0.6rem 0.85rem !important;
+    gap: 0.5rem !important;
+  }
+  .disclaimer-left {
+    flex-wrap: wrap !important;
+    gap: 0.35rem !important;
+    font-size: 0.75rem !important;
+  }
+  .disclaimer-sep {
+    display: none !important;
+  }
+  .disclaimer-desc {
+    font-size: 0.72rem !important;
+    line-height: 1.35 !important;
+  }
+  .banner-pills {
+    overflow-x: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 2px !important;
+    scrollbar-width: none !important;
+  }
+  .banner-pills::-webkit-scrollbar {
+    display: none !important;
+  }
+  .real-pill {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+    font-size: 0.68rem !important;
+  }
+
+  /* Blackout Banner */
+  .blackout-active-banner {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.5rem !important;
+    padding: 0.75rem 0.9rem !important;
+    border-radius: var(--radius-md) !important;
+  }
+  .blackout-restore-inline-btn {
+    width: 100% !important;
+    text-align: center !important;
+    padding: 0.5rem !important;
+  }
+
+  /* Critical Fix: Stack metric-row and metric-row.four-cols evenly */
+  .metric-row,
+  .metric-row.four-cols {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+  .metric {
+    padding: 0.55rem 0.7rem !important;
+  }
+  .metric .val {
+    font-size: 1.15rem !important;
+  }
+  .metric .lbl {
+    font-size: 0.66rem !important;
+  }
+
+  /* Universal Viewport & Card Box Boundaries */
+  .workspace-layout {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+  .main-content-viewport {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    flex: 1 1 100% !important;
+    align-self: stretch !important;
+    box-sizing: border-box !important;
+  }
+  .tab-pane {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+  .card,
+  .simulator-card,
+  .pillar-summary-card,
+  .pillar-card,
+  .fusion-pipeline-card,
+  .decision-hero-card,
+  .detail-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    align-self: stretch !important;
+    box-sizing: border-box !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    overflow: hidden !important;
+  }
+  .card *,
+  .pillar-summary-card *,
+  .simulator-card * {
+    overflow-wrap: break-word !important;
+  }
+  .link-btn {
+    white-space: normal !important;
+    word-break: break-word !important;
+    text-align: left !important;
+    display: inline-flex !important;
+    flex-wrap: wrap !important;
+  }
+
+  /* System status strip */
   .system-status-strip {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
-  .whatif-compare-grid {
-    grid-template-columns: 1fr;
+  .pillar-summary-card {
+    padding: 0.85rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
-  .fusion-cards-grid {
-    grid-template-columns: 1fr;
+  .psc-header {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0.35rem !important;
+    width: 100% !important;
   }
+  .psc-name {
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+  .psc-status {
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+  .psc-footer {
+    flex-wrap: wrap !important;
+    gap: 0.4rem !important;
+    width: 100% !important;
+    justify-content: space-between !important;
+  }
+
+  /* Interactive Flight Surgeon Simulator Card */
+  .simulator-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-bottom: 1.25rem !important;
+  }
+  .simulator-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.6rem !important;
+    padding: 0.75rem 0.85rem !important;
+  }
+  .sim-title-group {
+    gap: 0.5rem !important;
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+  .sim-title-group h3 {
+    font-size: 0.95rem !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+  .sim-subtitle {
+    font-size: 0.72rem !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+  .sim-header-right {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    gap: 0.4rem !important;
+  }
+  .sim-status-chip {
+    font-size: 0.68rem !important;
+    padding: 0.25rem 0.55rem !important;
+  }
+  .simulator-body {
+    padding: 0.75rem 0.85rem !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .sim-presets-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.4rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 0.6rem 0.75rem !important;
+  }
+  .presets-buttons-group {
+    overflow-x: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 3px !important;
+    scrollbar-width: none !important;
+  }
+  .presets-buttons-group::-webkit-scrollbar {
+    display: none !important;
+  }
+  .preset-btn {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+    font-size: 0.72rem !important;
+    padding: 0.35rem 0.65rem !important;
+  }
+  .sim-main-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    gap: 1rem !important;
+  }
+  .sim-controls-panel,
+  .sim-results-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+  .sim-control-box {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 0.65rem 0.75rem !important;
+  }
+  .sim-ctrl-header {
+    flex-wrap: wrap !important;
+    gap: 0.35rem !important;
+    justify-content: space-between !important;
+  }
+  .sim-two-cols {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    gap: 0.65rem !important;
+  }
+  .slider-scale-ticks {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: space-between !important;
+    gap: 0.25rem !important;
+    font-size: 0.62rem !important;
+    width: 100% !important;
+  }
+  .sim-actions-strip {
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
+  }
+  .sim-actions-strip button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  .sim-gauge-container {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 0.85rem !important;
+    gap: 0.85rem !important;
+  }
+  .sim-synergy-banner {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    text-align: left !important;
+  }
+  .sim-synergy-banner .synergy-content {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+  .sim-synergy-banner strong,
+  .sim-synergy-banner p {
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+  .sim-impact-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    gap: 0.6rem !important;
+  }
+  .sim-impact-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    padding: 0.65rem 0.75rem !important;
+  }
+  .sic-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 0.35rem !important;
+    width: 100% !important;
+  }
+  .sic-line {
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    line-height: 1.35 !important;
+    width: 100% !important;
+  }
+  .sim-directive-box {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 0.75rem 0.85rem !important;
+  }
+  .directive-text {
+    font-size: 0.88rem !important;
+    line-height: 1.4 !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+  .directive-contingency {
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+
+  /* Pillars 1-3 Sensory Telemetry Cards */
+  .pillar-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .pillar-label {
+    min-width: 0 !important;
+    max-width: calc(100% - 85px) !important;
+  }
+  .pillar-label h3 {
+    font-size: 0.92rem !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+  .provider-type-tag {
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    line-height: 1.3 !important;
+    font-size: 0.64rem !important;
+  }
+  .gauge-grid {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  .gauge-item {
+    display: grid !important;
+    grid-template-columns: 100px 1fr 40px !important;
+    gap: 0.45rem !important;
+    align-items: center !important;
+    width: 100% !important;
+  }
+  .gauge-item .lbl {
+    font-size: 0.74rem !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+  .topology-box,
+  .twin-prediction-box {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 0.75rem 0.85rem !important;
+  }
+  .topology-item {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0.35rem !important;
+    align-items: baseline !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    width: 100% !important;
+  }
+  .topology-item strong,
+  .topology-item span,
+  .topology-item button {
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+  .baseline-note {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0.4rem !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+  .twin-prediction-box strong {
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+
+  /* Flow Diagram: Touch-scrollable horizontal track with stable card boxes */
   .pipeline-flow-diagram {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.65rem;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: stretch !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    gap: 0.45rem !important;
+    padding: 0.65rem 0.6rem !important;
+    margin-bottom: 0.85rem !important;
+    scrollbar-width: thin !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .pipeline-flow-diagram::-webkit-scrollbar {
+    height: 4px !important;
+  }
+  .pipeline-flow-diagram::-webkit-scrollbar-thumb {
+    background: rgba(56, 189, 248, 0.3) !important;
+    border-radius: 4px !important;
+  }
+  .flow-step {
+    flex: 0 0 115px !important;
+    min-width: 115px !important;
+    max-width: 115px !important;
+    height: auto !important;
+    padding: 0.55rem 0.45rem !important;
+    border-radius: var(--radius-md) !important;
+    text-align: center !important;
+    box-sizing: border-box !important;
+  }
+  .flow-step .step-num {
+    font-size: 0.62rem !important;
+    letter-spacing: 0.3px !important;
+    margin-bottom: 0.2rem !important;
+    white-space: nowrap !important;
+  }
+  .flow-step .step-title {
+    font-size: 0.74rem !important;
+    font-weight: 700 !important;
+    line-height: 1.25 !important;
+    white-space: normal !important;
+  }
+  .flow-step .step-sub {
+    font-size: 0.63rem !important;
+    line-height: 1.2 !important;
+    margin-top: 0.2rem !important;
   }
   .flow-op, .flow-arrow {
-    transform: rotate(90deg);
-    align-self: center;
-    padding: 0.2rem 0;
+    transform: none !important;
+    align-self: center !important;
+    padding: 0 0.15rem !important;
+    font-size: 0.85rem !important;
+    flex-shrink: 0 !important;
   }
-  .metric-row {
-    grid-template-columns: 1fr;
+
+  /* Dashboard Columns & Card Containers (Prevent Rightward Blowout) */
+  .dashboard-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    gap: 1.25rem !important;
   }
-  .scenario-dropdown-menu, .views-dropdown-menu {
-    width: 100%;
-    left: 0;
-    right: 0;
+  .pillars-column,
+  .engine-column {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    align-self: stretch !important;
+    box-sizing: border-box !important;
+  }
+  .section-heading {
+    flex-wrap: wrap !important;
+    gap: 0.4rem !important;
+    margin-bottom: 0.75rem !important;
+  }
+  .section-heading h2 {
+    font-size: 1.05rem !important;
+  }
+  .card {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    align-self: stretch !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+  .card-header {
+    flex-wrap: wrap !important;
+    gap: 0.45rem !important;
+    padding: 0.75rem 0.85rem !important;
+  }
+  .card-header h3 {
+    font-size: 0.88rem !important;
+  }
+  .card-body {
+    padding: 0.85rem !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Card 4: Fusion Pipeline Card & Badges */
+  .fusion-pipeline-card .card-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.45rem !important;
+  }
+  .fusion-header-title {
+    width: 100% !important;
+  }
+  .formula-badge,
+  .trace-formula-preview,
+  .sim-formula-tag {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    white-space: normal !important;
+    font-size: 0.7rem !important;
+    line-height: 1.35 !important;
+    padding: 0.35rem 0.6rem !important;
+    border-radius: var(--radius-sm, 6px) !important;
+    text-align: left !important;
+  }
+
+  /* Fusion Mini Telemetry Cards (Clean 2-Col Grid, Synergy Spans 2) */
+  .fusion-cards-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .fusion-cards-grid .fusion-card:last-child {
+    grid-column: 1 / -1 !important;
+  }
+  .fusion-card {
+    padding: 0.6rem 0.65rem !important;
+    border-radius: var(--radius-sm, 8px) !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+  .fusion-card .fc-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 0.25rem !important;
+    margin-bottom: 0.25rem !important;
+  }
+  .fusion-card .fc-pillar {
+    font-size: 0.68rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.4px !important;
+    color: var(--text-muted) !important;
+  }
+  .fusion-card .fc-points {
+    font-size: 0.76rem !important;
+    font-family: var(--font-mono) !important;
+    font-weight: 700 !important;
+  }
+  .fusion-card .fc-status {
+    font-size: 0.74rem !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+  }
+  .fusion-card .fc-detail {
+    font-size: 0.68rem !important;
+    line-height: 1.25 !important;
+    margin-top: 0.2rem !important;
+    color: var(--text-dim) !important;
+    word-break: break-word !important;
+  }
+
+  /* Card 5: Autonomous Decision Hero Card */
+  .decision-hero-card .hero-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.6rem !important;
+    padding: 0.85rem 0.9rem !important;
+  }
+  .risk-overview {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    gap: 0.6rem !important;
+  }
+  .risk-pill {
+    font-size: 0.82rem !important;
+    padding: 0.35rem 0.75rem !important;
+  }
+  .score-display {
+    gap: 0.3rem !important;
+    align-items: baseline !important;
+  }
+  .score-num {
+    font-size: 1.6rem !important;
+    line-height: 1 !important;
+  }
+  .score-scale {
+    font-size: 0.72rem !important;
+  }
+  .meta-tag {
+    font-size: 0.68rem !important;
+    padding: 0.2rem 0.5rem !important;
+    align-self: flex-start !important;
+    max-width: 100% !important;
+    word-break: break-all !important;
+  }
+  .recommendation-box {
+    margin: 0.75rem 0.5rem !important;
+    padding: 0.75rem 0.85rem !important;
+    border-radius: 0 var(--radius-sm, 6px) var(--radius-sm, 6px) 0 !important;
+    border-left-width: 3px !important;
+    box-sizing: border-box !important;
+    width: auto !important;
+    max-width: calc(100% - 1rem) !important;
+  }
+  .action-tag {
+    font-size: 0.65rem !important;
+    letter-spacing: 0.5px !important;
+    margin-bottom: 0.3rem !important;
+  }
+  .action-text {
+    font-size: 0.9rem !important;
+    line-height: 1.4 !important;
+    word-break: break-word !important;
+  }
+  .alt-action {
+    font-size: 0.76rem !important;
+    margin-top: 0.5rem !important;
+    padding-top: 0.5rem !important;
+    word-break: break-word !important;
+  }
+  .confidence-strip {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.45rem !important;
+    padding: 0.75rem 0.85rem !important;
+    font-size: 0.74rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .confidence-strip .conf-item {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0.35rem !important;
+    align-items: baseline !important;
+    width: 100% !important;
+    word-break: break-word !important;
+  }
+  .confidence-strip .lbl {
+    font-size: 0.68rem !important;
+    letter-spacing: 0.4px !important;
+  }
+
+  /* Cards 6, 7, 8: Reasoning, Contributing Factors, Evidence */
+  .detail-card .card-header {
+    flex-wrap: wrap !important;
+    gap: 0.4rem !important;
+    padding: 0.75rem 0.85rem !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+  .detail-card .card-header h3 {
+    font-size: 0.88rem !important;
+    margin: 0 !important;
+  }
+  .sub-header-tag {
+    font-size: 0.64rem !important;
+    padding: 0.12rem 0.45rem !important;
+  }
+  .detail-card .card-body {
+    padding: 0.75rem 0.85rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .reasoning-list {
+    gap: 0.5rem !important;
+  }
+  .reasoning-list li {
+    font-size: 0.8rem !important;
+    line-height: 1.4 !important;
+    padding-left: 1.25rem !important;
+    word-break: break-word !important;
+  }
+  .card-body.table-responsive {
+    padding: 0.5rem 0.6rem !important;
+  }
+  .factors-table {
+    min-width: 440px !important;
+    font-size: 0.76rem !important;
+  }
+  .factors-table th {
+    padding: 0.5rem 0.55rem !important;
+    font-size: 0.68rem !important;
+  }
+  .factors-table td {
+    padding: 0.55rem 0.55rem !important;
+    font-size: 0.75rem !important;
+    word-break: break-word !important;
+  }
+  .factors-table code {
+    font-size: 0.7rem !important;
+    word-break: break-all !important;
+    white-space: normal !important;
+    padding: 0.1rem 0.25rem !important;
+  }
+  .evidence-card {
+    padding: 0.7rem 0.8rem !important;
+    margin-bottom: 0.6rem !important;
+    border-radius: var(--radius-sm, 6px) !important;
+  }
+  .evidence-header {
+    flex-wrap: wrap !important;
+    gap: 0.25rem !important;
+    font-size: 0.68rem !important;
+    margin-bottom: 0.25rem !important;
+  }
+  .evidence-title {
+    font-size: 0.82rem !important;
+    line-height: 1.3 !important;
+    margin-bottom: 0.25rem !important;
+  }
+  .evidence-excerpt {
+    font-size: 0.74rem !important;
+    line-height: 1.35 !important;
+    word-break: break-word !important;
+  }
+
+  /* Controls Bars across all tabs */
+  .controls-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.75rem !important;
+    padding: 0.85rem !important;
+  }
+  .control-group {
+    width: 100% !important;
+    min-width: 0 !important;
+    flex: 1 1 100% !important;
+  }
+  .select-input, .number-input, .form-control {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .controls-bar .btn,
+  .controls-bar button,
+  #p1RecalculateBtn,
+  #p2RunInferenceBtn,
+  #p3RunSimBtn {
+    width: 100% !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  /* Pillar banners */
+  .pillar-banner {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.5rem !important;
+    padding: 0.85rem 1rem !important;
+  }
+  .pillar-banner-info h2 {
+    font-size: 1.15rem !important;
+  }
+  .pillar-banner-info p {
+    font-size: 0.78rem !important;
+  }
+
+  /* Voice vitals buttons */
+  #tab-pillar2 .controls-bar > div {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+  }
+  #p2RecordVoiceBtn,
+  label[for="p2AudioFileInput"] {
+    width: 100% !important;
+    justify-content: center !important;
+    text-align: center !important;
+    margin: 0 !important;
+  }
+
+  /* What-If / Counterfactual Simulator */
+  .whatif-controls-strip {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.75rem !important;
+  }
+  .whatif-action-col button {
+    width: 100% !important;
+  }
+  .whatif-compare-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+  .whatif-impact-banner {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.5rem !important;
+  }
+  .impact-delta {
+    align-self: flex-start !important;
+  }
+
+  /* Decision Trace Panels (Tab 5 & Shared) */
+  .trace-base-strip,
+  .trace-summary-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.5rem !important;
+    padding: 0.75rem 0.85rem !important;
+  }
+  .trace-signals-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.65rem !important;
+  }
+  .trace-synergy-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.65rem !important;
+  }
+  .trace-signal-card {
+    padding: 0.75rem 0.8rem !important;
+  }
+
+  /* Tab 6 Centrifuge Sim */
+  #tab-centrifuge .card-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.75rem !important;
+  }
+  #tab-centrifuge .card-header > div:last-child {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 0.5rem !important;
+  }
+  #tab-centrifuge .card-header > div:last-child button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  #tab-centrifuge > div[style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+  #tab-centrifuge .card-body div[style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+  #centrifugeCrewGrid {
+    grid-template-columns: 1fr !important;
+  }
+  #tab-centrifuge div[style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+  #btnCopyCentrifugeJson {
+    width: 100% !important;
+  }
+
+  /* Tab 8 Federated Sync */
+  #syncDemoConsoleCard,
+  #syncDemoStepContainer {
+    font-size: 0.75rem !important;
+  }
+  #tab-sync .card[style*="padding: 1rem 1.25rem"] > div {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.75rem !important;
+  }
+  #tab-sync .card button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  #tab-sync div[style*="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr))"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.6rem !important;
+  }
+
+  /* Tab 9 Explainable AI */
+  #tab-xai .card[style*="padding: 0.9rem 1.25rem"] > div {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.75rem !important;
+  }
+  #tab-xai .card button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  #tab-xai div[style*="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr))"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.6rem !important;
+  }
+
+  /* Universal Responsive Tables */
+  .table-responsive,
+  div[style*="overflow-x: auto"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  .table-responsive table {
+    min-width: 440px;
+  }
+
+  /* Modals */
+  .med-brief-modal-overlay {
+    padding: 0.5rem !important;
+  }
+  .med-brief-modal-content {
+    max-height: 94vh !important;
+    border-radius: 12px !important;
+    width: 100% !important;
+  }
+  .med-brief-header {
+    padding: 0.85rem 1rem !important;
+  }
+  .med-brief-title-group {
+    gap: 0.6rem !important;
+  }
+  .med-brief-modal-title {
+    font-size: 1rem !important;
+  }
+  .med-brief-chips-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+    padding: 0.65rem 0.85rem !important;
+    gap: 0.5rem !important;
+  }
+  .med-brief-meta-strip {
+    padding: 0.5rem 0.85rem !important;
+    gap: 0.5rem !important;
+    font-size: 0.7rem !important;
+  }
+  .med-brief-footer {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.6rem !important;
+    padding: 0.75rem 1rem !important;
+  }
+  .footer-btns {
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 0.4rem !important;
+  }
+  .footer-btns .btn,
+  .footer-btns a {
+    width: 100% !important;
+    text-align: center !important;
+    justify-content: center !important;
+  }
+  #aegisSystemInfoModal div[style*="grid-template-columns: repeat(2, minmax(0, 1fr))"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Floating Copilot Launcher */
+  .copilot-widget {
+    bottom: 1rem !important;
+    right: 0.85rem !important;
+  }
+  .copilot-launcher-btn {
+    padding: 0.5rem 0.85rem !important;
+    gap: 0.45rem !important;
+  }
+  .launcher-title {
+    font-size: 0.74rem !important;
+  }
+  .launcher-sub {
+    display: none !important;
+  }
+
+  /* Floating Chat Window - Solid Mobile Bottom Sheet */
+  .copilot-chat-window {
+    position: fixed !important;
+    inset: auto 0.5rem 4.2rem 0.5rem !important;
+    width: auto !important;
+    max-width: none !important;
+    height: calc(100vh - 5.5rem) !important;
+    max-height: 540px !important;
+    right: 0.5rem !important;
+    left: 0.5rem !important;
+    border-radius: 14px !important;
+    z-index: 100002 !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.88) !important;
+  }
+
+  /* Footer */
+  .app-footer {
+    flex-direction: column !important;
+    text-align: center !important;
+    gap: 0.5rem !important;
+    padding: 1rem 0.75rem !important;
+    margin-bottom: 4.5rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Ultra-compact screens (< 480px) */
+  .metric-row,
+  .metric-row.four-cols,
+  #tab-sync div[style*="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr))"],
+  #tab-xai div[style*="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr))"],
+  .med-brief-chips-row {
+    grid-template-columns: 1fr !important;
+  }
+  .header-action-group .btn {
+    flex: 1 1 100% !important;
   }
 }
 
@@ -3837,14 +5000,6 @@ body {
   transition: all 0.2s ease;
 }
 
-@media (max-width: 640px) {
-  .copilot-chat-window {
-    width: calc(100vw - 1.5rem);
-    right: -0.75rem;
-    height: 75vh;
-  }
-}
-
 /* Voice Vitals Live Voice Input & Recording Animations */
 @keyframes pulseRedGlow {
   0%, 100% {
@@ -4257,17 +5412,20 @@ body {
 /* Hide the hamburger button on desktop */
 .hamburger-btn {
   display: none;
-  background: none;
-  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(13, 20, 36, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.25);
   color: #fff;
   font-size: 1.4rem;
-  padding: 0.4rem 0.7rem;
-  border-radius: 6px;
+  padding: 0.4rem 0.75rem;
+  border-radius: 8px;
   cursor: pointer;
   position: fixed;        /* stays in corner while scrolling */
   bottom: 1rem;
-  right: 1rem;
+  left: 1rem;
   z-index: 99999;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
 }
 
 /* On phones (screen smaller than 768px wide) */
@@ -4302,6 +5460,15 @@ body {
   /* When sidebar has the "open" class, show it */
   .sidebar-nav.open {
     display: block;
+  }
+  .sidebar-nav.open .sidebar-menu {
+    flex-direction: column !important;
+    overflow-x: visible !important;
+    flex-wrap: nowrap !important;
+  }
+  .sidebar-nav.open .sidebar-menu .nav-tab-btn {
+    width: 100% !important;
+    justify-content: flex-start !important;
   }
 
   /* Dark overlay behind the sidebar when open */
