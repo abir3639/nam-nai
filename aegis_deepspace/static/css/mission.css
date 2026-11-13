@@ -1,0 +1,1078 @@
+/* =====================================================================
+   AEGIS-DEEPSPACE — Mission Control & Flight Surgeon Simulator
+   (/static/css/mission.css)
+   ===================================================================== */
+
+/* ---------------------------------------------------------------------
+   1. Mission Control Page Header & Context
+   --------------------------------------------------------------------- */
+.mc-page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  margin-bottom: var(--sp-5);
+}
+.mc-page-title {
+  font-size: var(--fs-xl);
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+.mc-page-desc {
+  color: var(--text-2);
+  font-size: var(--fs-md);
+  margin-top: 2px;
+  max-width: 72ch;
+}
+.mc-page-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+/* ---------------------------------------------------------------------
+   2. Four-Pillar Overview Strip (Compact Aligned Row)
+   --------------------------------------------------------------------- */
+.system-status-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-6);
+}
+@media (max-width: 1100px) {
+  .system-status-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 560px) {
+  .system-status-strip {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.pillar-summary-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-panel);
+  padding: var(--sp-4) var(--sp-5);
+  min-width: 0;
+  transition: border-color var(--dur-fast) var(--ease);
+}
+.pillar-summary-card:hover {
+  border-color: var(--border-strong);
+}
+
+.psc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-2);
+}
+.psc-num {
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.psc-num .icon {
+  width: 15px;
+  height: 15px;
+  color: var(--text-3);
+}
+
+.psc-primary {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.psc-val {
+  color: var(--text);
+  font-size: var(--fs-num);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  font-variant-numeric: tabular-nums;
+}
+.psc-unit {
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+}
+
+.psc-status {
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  line-height: 1.4;
+  margin-bottom: var(--sp-3);
+  font-variant-numeric: tabular-nums;
+}
+.psc-status strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.psc-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--border);
+}
+.psc-model-hint {
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------------------------------------------------------------------
+   3. Flight Surgeon Simulator (Main Interactive Workspace)
+   --------------------------------------------------------------------- */
+.simulator-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-panel-lg);
+  margin-bottom: var(--sp-6);
+}
+.simulator-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  padding: var(--sp-4) var(--sp-5);
+  border-bottom: 1px solid var(--border);
+}
+.sim-header-left {
+  min-width: 0;
+}
+.sim-title-group {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+}
+.sim-title-group h3 {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--text);
+}
+.sim-subtitle {
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  margin-top: 2px;
+}
+.sim-header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+/* Sync status indicator (Distinguishes simulator preview vs synced telemetry) */
+.sim-sync-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: var(--r-pill);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  background: var(--neutral-soft);
+  color: var(--text-2);
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+.sim-sync-state::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.sim-sync-state.is-unsynced {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+.sim-sync-state.is-synced {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.simulator-body {
+  padding: var(--sp-5);
+}
+
+/* Preset Selector Row */
+.sim-presets-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  padding-bottom: var(--sp-4);
+  margin-bottom: var(--sp-5);
+  border-bottom: 1px solid var(--border);
+}
+.presets-label {
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.presets-buttons-group {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+.preset-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 var(--sp-3);
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  transition: background-color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+.preset-btn:hover {
+  background: var(--surface-muted);
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+.preset-btn.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Simulator Main Two-Column Grid (Desktop: Left Inputs, Right Clinical Synthesis) */
+.sim-main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: var(--sp-6);
+  align-items: start;
+}
+@media (max-width: 960px) {
+  .sim-main-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.sim-controls-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  padding-right: var(--sp-6);
+  border-right: 1px solid var(--border);
+  min-width: 0;
+}
+@media (max-width: 960px) {
+  .sim-controls-panel {
+    padding-right: 0;
+    padding-bottom: var(--sp-5);
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+}
+
+.sim-results-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+
+.sim-panel-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  padding-bottom: var(--sp-2);
+  border-bottom: 1px solid var(--border);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text);
+}
+.sim-hint {
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  font-weight: 400;
+}
+.sim-formula-tag {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  color: var(--text-2);
+  background: var(--surface-muted);
+  padding: 2px 8px;
+  border-radius: var(--r-sm);
+}
+
+/* Group related controls with whitespace & subtle dividers instead of nested cards */
+.sim-control-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--sp-2) 0;
+}
+.sim-control-box + .sim-control-box {
+  border-top: 1px solid var(--border);
+  padding-top: var(--sp-3);
+}
+.sim-two-cols {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-4);
+  padding: var(--sp-2) 0;
+  border-top: 1px solid var(--border);
+  padding-top: var(--sp-3);
+}
+.sim-two-cols .sim-control-box {
+  border-top: 0;
+  padding: 0;
+}
+@media (max-width: 560px) {
+  .sim-two-cols {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-3);
+  }
+}
+
+.sim-ctrl-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+.sim-ctrl-header label,
+.sim-control-box > label {
+  margin: 0;
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+}
+.slider-val-bubble {
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: 1px 8px;
+  border-radius: var(--r-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.sim-actions-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--border);
+}
+.sim-actions-strip #simSyncDashboardBtn {
+  flex: 1;
+  min-width: 220px;
+}
+
+/* Right Column: Clinical Synthesis Reading Order
+   1. Risk Score + Badge + Synergy Status
+   2. Recommended Action & Contingency
+   3. Contributing Domain Breakdown */
+.sim-gauge-container {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--sp-4);
+  align-items: center;
+  padding: var(--sp-4);
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+}
+@media (max-width: 560px) {
+  .sim-gauge-container {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.sim-meter-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  padding-right: var(--sp-4);
+  border-right: 1px solid var(--border);
+}
+@media (max-width: 560px) {
+  .sim-meter-card {
+    padding-right: 0;
+    padding-bottom: var(--sp-3);
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+}
+
+.sim-meter-visual {
+  position: relative;
+  width: 136px;
+  height: 78px;
+}
+.sim-circular-meter {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.sim-circular-meter .meter-bg {
+  stroke: var(--border-strong);
+}
+.sim-circular-meter .meter-bar {
+  transition: stroke-dashoffset var(--dur-panel) var(--ease), stroke var(--dur-fast) var(--ease);
+}
+.meter-center-text {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 2px;
+  text-align: center;
+  line-height: 1.1;
+}
+.meter-score-num {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.meter-score-denom {
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  margin-left: 2px;
+}
+
+.sim-level-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  padding: 2px 10px;
+  border-radius: var(--r-pill);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+.sim-level-badge::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.sim-synergy-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+}
+.sim-synergy-banner strong {
+  display: block;
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.sim-synergy-banner p {
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  line-height: 1.45;
+}
+.sim-synergy-banner.active strong {
+  color: var(--critical);
+}
+
+/* Recommended Action Box (Prominent in reading order) */
+.sim-directive-box {
+  padding: var(--sp-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--r-control);
+}
+.directive-tag {
+  display: block;
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.directive-text {
+  color: var(--text);
+  font-size: var(--fs-md);
+  font-weight: 600;
+  line-height: 1.45;
+  margin-bottom: var(--sp-2);
+}
+.directive-contingency {
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  padding-top: var(--sp-2);
+  border-top: 1px solid var(--border);
+}
+.directive-contingency strong {
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* Contributing Domain Breakdown Grid */
+.sim-impact-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-3);
+}
+@media (max-width: 640px) {
+  .sim-impact-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.sim-impact-card {
+  padding: var(--sp-3);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+}
+.sic-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.sic-tag {
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+.sic-header strong {
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.sic-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.sic-line {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+}
+.sic-line span {
+  color: var(--text);
+  font-weight: 500;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------------------
+   4. Synced Mission Telemetry & Decision Synthesis (Lower Dashboard)
+   --------------------------------------------------------------------- */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: var(--sp-6);
+  align-items: start;
+}
+@media (max-width: 1024px) {
+  .dashboard-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.pillars-column,
+.engine-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+
+.section-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding-bottom: var(--sp-2);
+  border-bottom: 1px solid var(--border);
+}
+.section-heading h2 {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--text);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.section-tag {
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+}
+
+/* Pillar Telemetry Cards */
+.pillar-card .pillar-label {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.pillar-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: var(--r-sm);
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+.provider-type-tag {
+  display: block;
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  font-weight: 400;
+  margin-top: 1px;
+}
+
+/* Shared Metric Row inside cards */
+.metric-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-3);
+}
+.metric-row.four-cols {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.metric-row.three-cols {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+@media (max-width: 760px) {
+  .metric-row.four-cols {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 520px) {
+  .metric-row,
+  .metric-row.three-cols,
+  .metric-row.four-cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--sp-3);
+  background: var(--surface-muted);
+  border-radius: var(--r-control);
+  min-width: 0;
+}
+.metric .lbl {
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+}
+.metric .val {
+  color: var(--text);
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+}
+.metric .val small {
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+}
+
+.topology-box,
+.twin-prediction-box {
+  margin-top: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface-muted);
+  border-radius: var(--r-control);
+  font-size: var(--fs-sm);
+}
+.topology-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  line-height: 1.5;
+}
+.topology-item + .topology-item {
+  margin-top: 4px;
+}
+.topology-item .lbl,
+.twin-prediction-box .lbl {
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+}
+.shielding {
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+}
+.twin-prediction-box strong {
+  display: block;
+  margin-top: 2px;
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* Gauge bars in Voice Vitals card */
+.gauge-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+.gauge-item {
+  display: grid;
+  grid-template-columns: 130px 1fr 48px;
+  align-items: center;
+  gap: var(--sp-3);
+  font-size: var(--fs-sm);
+}
+.gauge-item .lbl {
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+.gauge-val {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text);
+}
+.baseline-note {
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--border);
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+}
+.baseline-note strong {
+  color: var(--text);
+}
+
+/* Decision Hero Card */
+.decision-hero-card {
+  padding: var(--sp-5);
+}
+.hero-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  padding-bottom: var(--sp-3);
+  margin-bottom: var(--sp-4);
+  border-bottom: 1px solid var(--border);
+}
+.risk-overview {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+.risk-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 26px;
+  padding: 2px 12px;
+  border-radius: var(--r-pill);
+  border: 1px solid transparent;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  background: var(--success-soft);
+  color: var(--success);
+}
+.score-display {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.score-num {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.score-scale {
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+}
+.meta-tag {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  background: var(--surface-muted);
+  padding: 2px 8px;
+  border-radius: var(--r-sm);
+}
+
+.recommendation-box {
+  padding: var(--sp-4);
+  background: var(--surface-muted);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--r-control);
+  margin-bottom: var(--sp-4);
+}
+.action-tag {
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.action-text {
+  color: var(--text);
+  font-size: var(--fs-md);
+  font-weight: 600;
+  line-height: 1.45;
+}
+.alt-action {
+  margin-top: var(--sp-2);
+  padding-top: var(--sp-2);
+  border-top: 1px solid var(--border);
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+}
+.alt-action .lbl {
+  font-weight: 600;
+  color: var(--text);
+  margin-right: 4px;
+}
+
+.confidence-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+}
+.conf-item strong {
+  color: var(--text);
+}
+
+/* Risk Fusion Pipeline & Formula Breakdown */
+.fusion-header-title {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.formula-badge {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  background: var(--surface-muted);
+  padding: 2px 8px;
+  border-radius: var(--r-sm);
+}
+
+.pipeline-flow-diagram {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--sp-4);
+}
+.flow-step {
+  flex: 1 1 110px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  min-width: 0;
+}
+.flow-step.highlight-step {
+  background: var(--accent-soft);
+  border-color: var(--accent-soft-2);
+}
+.step-num {
+  color: var(--text-2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+}
+.step-title {
+  color: var(--text);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+.step-sub {
+  color: var(--text-2);
+  font-size: 11.5px;
+}
+.flow-op,
+.flow-arrow {
+  color: var(--text-3);
+  font-weight: 600;
+  font-size: var(--fs-sm);
+}
+
+.fusion-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--sp-2);
+}
+@media (max-width: 760px) {
+  .fusion-cards-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.fusion-card {
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  font-size: var(--fs-xs);
+}
+.fusion-card.has-impact.moderate {
+  border-color: #E9CF9A;
+  background: var(--warning-soft);
+}
+.fusion-card.has-impact.high,
+.fusion-card.has-impact.critical,
+.fusion-card.synergy-card.active {
+  border-color: #E7B7B2;
+  background: var(--critical-soft);
+}
+.fc-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px;
+  margin-bottom: 2px;
+}
+.fc-pillar {
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 600;
+}
+.fc-points {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text);
+}
+.fc-status {
+  font-weight: 600;
+  color: var(--text);
+  font-size: var(--fs-xs);
+}
+.fc-detail {
+  color: var(--text-2);
+  font-size: 11.5px;
+  line-height: 1.35;
+  margin-top: 2px;
+}
+
+/* Reasoning List, Contributing Factors, and Evidence Cards */
+.sub-header-tag {
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+}
+.reasoning-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding-left: 1.2rem;
+  color: var(--text);
+  font-size: var(--fs-sm);
+}
+.reasoning-list li {
+  line-height: 1.5;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+.factors-table .empty-state {
+  text-align: center;
+  color: var(--text-2);
+  padding: var(--sp-4);
+}
+
+#evidenceContainer {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--sp-3);
+}
+.evidence-card {
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  font-size: var(--fs-xs);
+}
+.evidence-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  margin-bottom: 4px;
+}
+.evidence-source {
+  color: var(--accent);
+  font-weight: 600;
+}
+.evidence-citation {
+  font-family: var(--font-mono);
+  color: var(--text-2);
+}
+.evidence-title {
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.evidence-excerpt {
+  color: var(--text-2);
+  line-height: 1.45;
+  font-style: italic;
+}

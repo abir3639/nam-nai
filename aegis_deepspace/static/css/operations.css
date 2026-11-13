@@ -1,0 +1,491 @@
+/* =====================================================================
+   AEGIS-DEEPSPACE — Operations Views
+   (/static/css/operations.css)
+   Covers: Centrifuge Sim (Tab 6), AI Copilot Chat (Tab 7),
+           Federated Sync (Tab 8), and Explainable AI (Tab 9).
+   ===================================================================== */
+
+/* Shared section header bar */
+.section-title-bar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  padding-bottom: var(--sp-4);
+  margin-bottom: var(--sp-5);
+  border-bottom: 1px solid var(--border);
+}
+
+/* ---------------------------------------------------------------------
+   1. Centrifuge Spin-Down Simulator
+   --------------------------------------------------------------------- */
+@keyframes habitatRingSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.centrifuge-split-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: var(--sp-5);
+  margin-bottom: var(--sp-5);
+}
+.centrifuge-gauges-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-5);
+}
+.centrifuge-roster-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--sp-3);
+}
+@media (max-width: 1100px) {
+  .centrifuge-gauges-grid,
+  .centrifuge-roster-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 960px) {
+  .centrifuge-split-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.centrifuge-split-grid > .card,
+.centrifuge-gauges-grid > .card,
+#tab-centrifuge .card {
+  min-width: 0;
+  overflow: hidden;
+}
+@media (max-width: 560px) {
+  .centrifuge-gauges-grid,
+  .centrifuge-roster-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  #tab-centrifuge .card-body > div[style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .ring-stage {
+    width: 220px;
+    height: 220px;
+  }
+}
+
+.ring-stage {
+  position: relative;
+  width: 260px;
+  height: 260px;
+  margin: var(--sp-2) auto var(--sp-4);
+}
+.ring-overlay-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  text-align: center;
+  background: var(--surface);
+  padding: 6px 10px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-float);
+}
+
+.scrubber-box {
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  padding: var(--sp-3) var(--sp-4);
+}
+
+.code-block {
+  background: var(--surface-muted);
+  color: var(--text);
+  padding: var(--sp-4);
+  border-radius: var(--r-control);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  overflow-x: auto;
+  max-height: 360px;
+  border: 1px solid var(--border);
+  line-height: 1.5;
+}
+
+/* ---------------------------------------------------------------------
+   2. AI Copilot Chat Section & Shared Chat Components
+   --------------------------------------------------------------------- */
+.copilot-section-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.85fr) minmax(0, 1fr);
+  gap: var(--sp-5);
+  align-items: start;
+}
+@media (max-width: 960px) {
+  .copilot-section-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.copilot-console-card {
+  display: flex;
+  flex-direction: column;
+  height: 680px;
+  overflow: hidden;
+}
+
+.copilot-chips-container {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-muted);
+}
+.copilot-chip,
+.gemini-hint-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 2px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+.copilot-chip:hover,
+.gemini-hint-chip:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent-soft-2);
+  color: var(--accent);
+}
+
+.copilot-messages {
+  flex: 1;
+  padding: var(--sp-4);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  background: var(--surface);
+}
+.copilot-msg {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  max-width: 92%;
+}
+.copilot-msg.user-msg {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+.msg-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+.bot-msg .msg-avatar {
+  background: var(--accent-soft);
+  border-color: var(--accent-soft-2);
+  color: var(--accent);
+}
+.msg-bubble {
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--border);
+  border-radius: var(--r-panel);
+  background: var(--surface-muted);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  min-width: 0;
+}
+.user-msg .msg-bubble {
+  background: var(--accent-soft);
+  border-color: var(--accent-soft-2);
+}
+.msg-author {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.msg-time {
+  color: var(--text-2);
+  font-weight: 400;
+  font-size: 11.5px;
+}
+.msg-content h3,
+.msg-content h4 {
+  font-size: var(--fs-sm);
+  margin: var(--sp-2) 0 4px;
+}
+.msg-content ul {
+  margin: 4px 0;
+  padding-left: 1.1rem;
+}
+.msg-content code {
+  background: var(--surface);
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  font-size: var(--fs-xs);
+}
+.msg-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: var(--sp-2);
+  padding-top: var(--sp-2);
+  border-top: 1px solid var(--border);
+}
+.msg-citation-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 8px;
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  font-size: 11.5px;
+}
+.msg-action-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--r-sm);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+
+/* Typing indicator */
+.copilot-typing {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 2px;
+}
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-3);
+}
+
+/* Section input area */
+.gemini-input-area {
+  padding: var(--sp-3) var(--sp-4);
+  border-top: 1px solid var(--border);
+  background: var(--surface-muted);
+}
+.gemini-prompt-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-control);
+}
+.gemini-prompt-card:focus-within {
+  border-color: var(--accent);
+  box-shadow: var(--focus-ring);
+}
+.gemini-textarea {
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 4px 0 !important;
+  min-height: 48px !important;
+  resize: none;
+  background: transparent;
+}
+.gemini-card-bottom-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+.gemini-card-hints {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.gemini-send-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border: 0;
+  border-radius: var(--r-control);
+  background: var(--accent);
+  color: #fff;
+  transition: background-color var(--dur-fast) var(--ease);
+}
+.gemini-send-btn:hover {
+  background: var(--accent-hover);
+}
+.gemini-input-footer {
+  margin-top: 6px;
+  color: var(--text-2);
+  font-size: 11.5px;
+  text-align: center;
+}
+
+/* ---------------------------------------------------------------------
+   3. Federated Sync & Explainable AI Shared Layouts
+   --------------------------------------------------------------------- */
+.sync-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-5);
+}
+@media (max-width: 1150px) {
+  .sync-metrics-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 640px) {
+  .sync-metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.sync-split-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: var(--sp-5);
+  margin-bottom: var(--sp-5);
+}
+@media (max-width: 960px) {
+  .sync-split-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.xai-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+@media (max-width: 960px) {
+  .xai-metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 560px) {
+  .xai-metrics-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.xai-narrative-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: var(--sp-4);
+}
+@media (max-width: 820px) {
+  .xai-narrative-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.xai-wf-header {
+  display: grid;
+  grid-template-columns: 210px 1fr 110px;
+  gap: var(--sp-3);
+  padding-bottom: var(--sp-2);
+  margin-bottom: var(--sp-2);
+  border-bottom: 1px solid var(--border);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.xai-wf-row {
+  display: grid;
+  grid-template-columns: 210px 1fr 110px;
+  gap: var(--sp-3);
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: var(--fs-xs);
+}
+.xai-wf-row:last-child {
+  border-bottom: 0;
+}
+.xai-wf-label {
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.xai-wf-obs {
+  font-size: 11.5px;
+  color: var(--text-2);
+  font-family: var(--font-mono);
+}
+.xai-wf-obs strong {
+  color: var(--text);
+}
+.xai-wf-track {
+  position: relative;
+  height: 22px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+.xai-wf-axis {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1.5px;
+  background: var(--border-strong);
+  z-index: 2;
+}
+.xai-wf-val {
+  text-align: right;
+}
+@media (max-width: 680px) {
+  .xai-wf-header {
+    display: none;
+  }
+  .xai-wf-row {
+    grid-template-columns: 1fr auto;
+    gap: 6px;
+  }
+  .xai-wf-track {
+    grid-column: 1 / -1;
+    order: 3;
+  }
+}

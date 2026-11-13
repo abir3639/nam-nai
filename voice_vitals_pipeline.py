@@ -44,9 +44,17 @@ class VoiceVitalsFusionEngine:
 
     def analyze_acoustics(self, audio_path: str) -> dict:
         y, sr = librosa.load(audio_path, sr=self.sr)
+        if len(y) == 0:
+            y = np.zeros(self.sr, dtype=np.float32)
         y_trimmed, _ = librosa.effects.trim(y, top_db=25)
+        if len(y_trimmed) < self.sr // 4:
+            y_trimmed = y
+        if len(y_trimmed) < self.sr // 4:
+            y_trimmed = np.pad(y_trimmed, (0, max(0, self.sr // 4 - len(y_trimmed))), mode="constant")
 
         mfcc = librosa.feature.mfcc(y=y_trimmed, sr=sr, n_mfcc=13)
+        if mfcc.shape[1] < 4:
+            mfcc = np.pad(mfcc, ((0, 0), (0, 4 - mfcc.shape[1])), mode="edge")
         mfcc_tensor = torch.tensor(mfcc).unsqueeze(0).float()
 
         with torch.no_grad():
@@ -62,7 +70,12 @@ class VoiceVitalsFusionEngine:
     def analyze_sentiment(self, audio_path: str) -> dict:
         result = self.stt_model.transcribe(audio_path)
         transcript = result["text"].strip()
-        sentiment_out = self.sentiment_model(transcript)[0]
+        if not transcript:
+            return {
+                "transcript": "[No intelligible speech detected in audio sample]",
+                "mood_valence": 0.0
+            }
+        sentiment_out = self.sentiment_model(transcript[:512])[0]
 
         score = sentiment_out["score"]
         valence = score if sentiment_out["label"] == "POSITIVE" else -score

@@ -139,6 +139,41 @@ def get_pillar2_audio_options():
     }
 
 
+def _update_state_from_voice_analysis(analysis: Dict[str, Any]) -> Dict[str, Any]:
+    """Synchronizes global CrewState.voice_vitals and DecisionObject with on-demand voice analysis."""
+    global current_state, current_decision
+    telemetry = analysis.get("telemetry", {})
+    anomalies = analysis.get("anomalies", {})
+    z_scores = anomalies.get("z_scores", {})
+
+    fatigue = float(telemetry.get("acoustic_fatigue_score", current_state.voice_vitals.fatigue_score))
+    hypoxia = float(telemetry.get("acoustic_hypoxia_score", current_state.voice_vitals.hypoxia_indicator))
+    mood = float(telemetry.get("mood_valence", 0.0))
+    if "cognitive_strain" in telemetry:
+        cognitive_strain = float(telemetry["cognitive_strain"])
+    else:
+        cognitive_strain = round(min(1.0, max(0.0, (1.0 - mood) / 2.0 * 0.7 + fatigue * 0.3)), 2)
+
+    fatigue_sigma = float(z_scores.get("fatigue_sigma", 0.3))
+    mood_sigma = float(z_scores.get("mood_sigma", 0.0))
+    effective_sigma = max(fatigue_sigma, mood_sigma * 0.5)
+    reported_sigma = round(min(4.5, max(-3.0, effective_sigma)), 2)
+
+    current_state.voice_vitals = VoiceVitalsState(
+        fatigue_score=round(min(1.0, max(0.0, fatigue)), 2),
+        cognitive_strain_score=round(min(1.0, max(0.0, cognitive_strain)), 2),
+        hypoxia_indicator=round(min(1.0, max(0.0, hypoxia)), 2),
+        deviation_from_baseline_z=reported_sigma,
+        confidence=0.92
+    )
+    current_decision = engine.process(current_state)
+
+    enriched = dict(analysis)
+    enriched["crew_state"] = current_state
+    enriched["decision"] = current_decision
+    return enriched
+
+
 @app.post("/api/pillar2/process_audio")
 def process_voice_audio(req: AudioProcessRequest):
     """Processes an audio recording through the real Whisper STT, DistilBERT, and MFCC-CNN pipeline."""
@@ -147,7 +182,8 @@ def process_voice_audio(req: AudioProcessRequest):
         provider = default_coordinator.voice_provider
     else:
         provider = RealVoiceVitalsProvider()
-    return provider.analyze_audio(req.audio_path, crew_id=req.crew_id or "ASTRO-01")
+    result = provider.analyze_audio(req.audio_path, crew_id=req.crew_id or "ASTRO-01")
+    return _update_state_from_voice_analysis(result)
 
 
 @app.post("/api/pillar2/upload_audio")
@@ -156,26 +192,40 @@ async def upload_voice_audio(
     crew_id: str = Form("ASTRO-01")
 ):
     """Accepts an uploaded or recorded voice log (wav/webm/ogg/mp3), saves and analyzes it."""
-    import time
+    import shutil
     import subprocess
     upload_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "uploads"))
     os.makedirs(upload_dir, exist_ok=True)
     
     filename = file.filename or "recording.wav"
     file_ext = os.path.splitext(filename)[1].lower() or ".wav"
-    safe_name = f"voice_input_{int(time.time())}{file_ext}"
-    save_path = os.path.join(upload_dir, safe_name)
+    ts_ms = int(time.time() * 1000)
+    raw_save_path = os.path.join(upload_dir, f"voice_raw_{ts_ms}{file_ext}")
+    target_wav = os.path.join(upload_dir, f"voice_input_{ts_ms}.wav")
     
     contents = await file.read()
-    with open(save_path, "wb") as f:
+    if not contents:
+        raise HTTPException(status_code=400, detail="Uploaded audio file is empty.")
+
+    with open(raw_save_path, "wb") as f:
         f.write(contents)
         
-    target_wav = save_path
-    if file_ext not in [".wav"]:
-        target_wav = os.path.splitext(save_path)[0] + ".wav"
-        venv_ffmpeg = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".venv", "bin", "ffmpeg"))
-        cmd = [venv_ffmpeg, "-y", "-i", save_path, "-ar", "16000", "-ac", "1", target_wav]
-        subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    venv_ffmpeg = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".venv", "bin", "ffmpeg"))
+    ffmpeg_bin = venv_ffmpeg if os.path.exists(venv_ffmpeg) else (shutil.which("ffmpeg") or "ffmpeg")
+    cmd = [ffmpeg_bin, "-y", "-i", raw_save_path, "-ar", "16000", "-ac", "1", target_wav]
+    proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if proc.returncode == 0 and os.path.exists(target_wav) and os.path.getsize(target_wav) > 0:
+        if raw_save_path != target_wav and os.path.exists(raw_save_path):
+            try:
+                os.remove(raw_save_path)
+            except OSError:
+                pass
+    else:
+        # Fallback to raw file if ffmpeg conversion was unavailable and input is already readable
+        if file_ext == ".wav":
+            shutil.move(raw_save_path, target_wav)
+        else:
+            target_wav = raw_save_path
         
     from aegis_deepspace.pillar2_real import RealVoiceVitalsProvider
     if isinstance(default_coordinator.voice_provider, RealVoiceVitalsProvider):
@@ -184,7 +234,10 @@ async def upload_voice_audio(
         provider = RealVoiceVitalsProvider()
         
     result = provider.analyze_audio(target_wav, crew_id=crew_id)
-    return result
+    enriched = _update_state_from_voice_analysis(result)
+    enriched["audio_path"] = f"uploads/{os.path.basename(target_wav)}"
+    enriched["original_filename"] = filename
+    return enriched
 
 
 @app.get("/api/providers/astro_twin", response_model=AstroTwinState)
@@ -281,6 +334,9 @@ def run_scenario(scenario_id: str):
     if scenario_id not in DEMO_SCENARIOS:
         raise HTTPException(status_code=404, detail="Scenario not found")
     
+    if hasattr(default_coordinator.voice_provider, "clear_custom_analysis"):
+        default_coordinator.voice_provider.clear_custom_analysis()
+
     active_scenario = scenario_id
     current_state = DEMO_SCENARIOS[scenario_id]()
     current_decision = engine.process(current_state)

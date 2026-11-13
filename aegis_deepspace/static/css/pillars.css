@@ -1,0 +1,536 @@
+/* =====================================================================
+   AEGIS-DEEPSPACE — Pillar Detail Views
+   (/static/css/pillars.css)
+   Covers: Radiation Safe-Route (P1), Voice Vitals (P2),
+           Astro-Twin (P3), and Autonomous Decision Engine (P4).
+   ===================================================================== */
+
+.pillar-page-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+  min-width: 0;
+}
+
+/* Page header banner for each pillar */
+.pillar-banner {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  padding-bottom: var(--sp-4);
+  border-bottom: 1px solid var(--border);
+}
+.pillar-banner-info h2 {
+  font-size: var(--fs-xl);
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+.pillar-banner-info p {
+  color: var(--text-2);
+  font-size: var(--fs-md);
+  margin-top: 2px;
+  max-width: 74ch;
+}
+.pillar-banner-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+.impl-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  padding: 2px 10px;
+  border-radius: var(--r-pill);
+  background: var(--success-soft);
+  color: var(--success);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+.banner-sub {
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+}
+
+/* Controls bar across pillar views */
+.controls-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  padding: var(--sp-4) var(--sp-5);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-panel);
+}
+.control-group {
+  flex: 1 1 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.control-group label {
+  margin: 0;
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+
+.two-col-layout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-5);
+  align-items: start;
+}
+.three-col-layout {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-4);
+  align-items: stretch;
+}
+@media (max-width: 960px) {
+  .two-col-layout,
+  .three-col-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------------------------------------------------------------------
+   Pillar 1: Habitat Graph Topology & Evacuation Steps
+   --------------------------------------------------------------------- */
+.habitat-topology-visual {
+  padding: var(--sp-3);
+  margin-bottom: var(--sp-4);
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  overflow-x: auto;
+}
+.habitat-nodes-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--sp-2);
+  min-width: 0;
+}
+.habitat-corridor-connector {
+  display: none !important;
+}
+.habitat-node-box {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--sp-2) 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  font-size: var(--fs-xs);
+}
+@media (max-width: 560px) {
+  .habitat-nodes-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.two-col-layout .data-table th,
+.two-col-layout .data-table td {
+  padding: 6px 6px;
+  font-size: 12px;
+  white-space: normal;
+}
+.habitat-node-box.is-current {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.habitat-node-box.is-safe-haven {
+  border-color: var(--success);
+  background: var(--success-soft);
+}
+.node-mod-id {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.habitat-node-box.is-current .node-mod-id {
+  color: var(--accent);
+}
+.habitat-node-box.is-safe-haven .node-mod-id {
+  color: var(--success);
+}
+.node-mod-name {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text);
+}
+.node-mod-shield {
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+}
+.node-mod-dose {
+  margin-top: 4px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text);
+}
+.habitat-corridor-connector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  color: var(--text-3);
+  font-size: 11px;
+}
+.corridor-arrow {
+  font-size: 14px;
+  color: var(--text-2);
+}
+
+.route-step-list {
+  list-style: none;
+  padding: 0;
+  margin: var(--sp-2) 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.route-step-item {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr;
+  gap: var(--sp-2);
+  align-items: center;
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+}
+.route-step-item strong {
+  color: var(--text);
+}
+.route-step-item.target-step {
+  background: var(--success-soft);
+  border-color: #B9DFC9;
+}
+@media (max-width: 640px) {
+  .route-step-item {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ---------------------------------------------------------------------
+   Pillar 2: Voice Vitals Recording Banner
+   --------------------------------------------------------------------- */
+.recording-banner {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--critical-soft);
+  border: 1px solid #E7B7B2;
+  border-radius: var(--r-control);
+  color: var(--critical);
+}
+
+/* ---------------------------------------------------------------------
+   Pillar 4: Deterministic Decision Trace & What-If Simulator
+   --------------------------------------------------------------------- */
+.trace-base-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  padding: var(--sp-3) var(--sp-4);
+  margin-bottom: var(--sp-4);
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  font-size: var(--fs-sm);
+}
+.trace-base-box {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+}
+.trace-lbl {
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+.trace-val {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text);
+}
+.trace-formula-preview {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+}
+
+.trace-signals-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-3);
+}
+@media (max-width: 900px) {
+  .trace-signals-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.trace-signal-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  font-size: var(--fs-xs);
+}
+.trace-signal-card.is-triggered {
+  border-color: #E9CF9A;
+  background: #FFFCF5;
+}
+.trace-signal-card.critical-trigger {
+  border-color: #E7B7B2;
+  background: #FFFAF9;
+}
+.tsc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  margin-bottom: 4px;
+}
+.tsc-source-tag {
+  color: var(--text-2);
+  font-weight: 600;
+}
+.tsc-points-badge {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: var(--r-sm);
+  background: var(--surface-muted);
+  color: var(--text-2);
+}
+.tsc-points-badge.has-points {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+.tsc-name {
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.tsc-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: var(--text-2);
+}
+.tsc-row strong {
+  color: var(--text);
+}
+.tsc-status-tag {
+  display: inline-block;
+  padding-top: var(--sp-2);
+  font-weight: 600;
+  color: var(--success);
+}
+.tsc-status-tag.triggered {
+  color: var(--warning);
+}
+
+.trace-synergy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--sp-3);
+}
+.trace-synergy-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  font-size: var(--fs-xs);
+}
+.trace-synergy-item.active {
+  background: var(--critical-soft);
+  border-color: #E7B7B2;
+}
+.tsi-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.tsi-name {
+  font-weight: 600;
+  color: var(--text);
+}
+.tsi-exp {
+  color: var(--text-2);
+}
+.tsi-points {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.trace-summary-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  margin-top: var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  font-size: var(--fs-sm);
+}
+
+/* What-If Counterfactual Simulator */
+.demo-callout-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--r-control);
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+}
+.demo-callout-notice strong {
+  color: var(--text);
+}
+
+.whatif-controls-strip {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface-muted);
+  border-radius: var(--r-control);
+}
+.whatif-slider-box {
+  flex: 1 1 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.whatif-slider-box .slider-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.whatif-compare-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-4);
+}
+@media (max-width: 760px) {
+  .whatif-compare-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.whatif-box {
+  padding: var(--sp-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+}
+.whatif-box.counterfactual-box.escalated {
+  border-color: #E7B7B2;
+  background: #FFFAF9;
+}
+.wb-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  padding-bottom: var(--sp-2);
+  margin-bottom: var(--sp-3);
+  border-bottom: 1px solid var(--border);
+}
+.wb-tag {
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+.wb-metric-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+.wb-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.wb-metric .lbl {
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+}
+.wb-metric .val {
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.wb-rec-box {
+  padding-top: var(--sp-2);
+  border-top: 1px solid var(--border);
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+}
+
+.whatif-impact-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  margin-top: var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+}
+.whatif-impact-banner.escalated {
+  background: var(--critical-soft);
+  border-color: #E7B7B2;
+}
+.impact-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.impact-delta {
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text);
+}

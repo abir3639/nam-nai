@@ -335,3 +335,32 @@ def test_api_sync_endpoints():
     assert res_demo.json()["demo_status"] == "COMPLETED"
 
 
+def test_api_pillar2_process_and_persist():
+    """Verify Pillar 2 audio inference updates global state and persists across analysis fetches."""
+    client.post("/api/scenarios/normal")
+    res_proc = client.post("/api/pillar2/process_audio", json={
+        "audio_path": "fatigued_log.wav",
+        "crew_id": "ASTRO-01"
+    })
+    assert res_proc.status_code == 200
+    proc_data = res_proc.json()
+    assert proc_data["audio_file"] == "fatigued_log.wav"
+    assert "telemetry" in proc_data
+    assert "anomalies" in proc_data
+    assert "crew_state" in proc_data
+    assert "decision" in proc_data
+
+    # Subsequent GET /api/pillar2/analysis?scenario=normal must return the analyzed audio rather than overwriting with nominal_comm_log.wav
+    res_analysis = client.get("/api/pillar2/analysis?scenario=normal")
+    assert res_analysis.status_code == 200
+    analysis_data = res_analysis.json()
+    assert analysis_data["audio_file"] == "fatigued_log.wav"
+
+    # Switching scenario resets back to preset
+    client.post("/api/scenarios/normal")
+    res_reset = client.get("/api/pillar2/analysis?scenario=normal")
+    assert res_reset.status_code == 200
+    assert res_reset.json()["audio_file"] == "nominal_comm_log.wav"
+
+
+

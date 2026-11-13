@@ -1,6 +1,29 @@
 // Aegis-DeepSpace Mission Control & Four-Pillar Client Logic
 
 function initAegisApp() {
+  function svgIcon(name, cls = "icon icon-sm") {
+    return `<svg class="${cls}" aria-hidden="true"><use href="#i-${name}"/></svg>`;
+  }
+
+  function updateRangeFill(slider) {
+    if (!slider) return;
+    const min = parseFloat(slider.min) || 0;
+    const max = parseFloat(slider.max) || 100;
+    const val = parseFloat(slider.value) || 0;
+    const pct = max > min ? Math.min(100, Math.max(0, ((val - min) / (max - min)) * 100)) : 0;
+    slider.style.setProperty("--fill", `${pct.toFixed(1)}%`);
+  }
+
+  function syncAllRangeFills() {
+    document.querySelectorAll('input[type="range"]').forEach(updateRangeFill);
+  }
+
+  document.addEventListener("input", (e) => {
+    if (e.target && e.target.matches('input[type="range"]')) {
+      updateRangeFill(e.target);
+    }
+  });
+
   // Navigation elements
   const mainNavBar = document.getElementById("mainNavBar");
   const tabPanes = document.querySelectorAll(".tab-pane");
@@ -14,13 +37,17 @@ function initAegisApp() {
 
   // Status strip elements (Hero 4-Pillar Overview)
   const stripRadBadge = document.getElementById("stripRadBadge");
+  const stripRadVal = document.getElementById("stripRadVal");
   const stripRadSummary = document.getElementById("stripRadSummary");
   const stripVoiceBadge = document.getElementById("stripVoiceBadge");
+  const stripVoiceVal = document.getElementById("stripVoiceVal");
   const stripVoiceSummary = document.getElementById("stripVoiceSummary");
   const stripTwinBadge = document.getElementById("stripTwinBadge");
+  const stripTwinVal = document.getElementById("stripTwinVal");
   const stripTwinSummary = document.getElementById("stripTwinSummary");
   const stripDecisionBadge = document.getElementById("stripDecisionBadge");
   const stripScoreNum = document.getElementById("stripScoreNum");
+  const stripDecisionSummary = document.getElementById("stripDecisionSummary");
 
   // Pillar 1 Dashboard Elements
   const radRiskBadge = document.getElementById("radRiskBadge");
@@ -229,6 +256,8 @@ function initAegisApp() {
       }
     });
 
+    document.body.classList.toggle("copilot-tab-active", targetTabId === "tab-copilot");
+
     // If switching to Pillar tabs, fetch fresh analysis
     if (targetTabId === "tab-pillar1") {
       fetchPillar1Analysis();
@@ -433,6 +462,7 @@ function initAegisApp() {
       if (file) {
         uploadAndProcessVoiceLog(file, file.name);
       }
+      e.target.value = "";
     });
   }
 
@@ -446,6 +476,18 @@ function initAegisApp() {
   // ===================================================================
   // Data Fetching & Sync
   // ===================================================================
+  function refreshActivePillarTab(scenId, modCode, fluxVal) {
+    const activePane = document.querySelector(".tab-pane.active");
+    const activeId = activePane ? activePane.id : "";
+    if (activeId === "tab-pillar1") {
+      fetchPillar1Analysis(modCode, fluxVal);
+    } else if (activeId === "tab-pillar2") {
+      fetchPillar2Analysis(scenId);
+    } else if (activeId === "tab-pillar3") {
+      fetchPillar3Analysis(scenId);
+    }
+  }
+
   async function fetchInitialState() {
     try {
       const res = await fetch("/api/state");
@@ -456,9 +498,7 @@ function initAegisApp() {
         b.classList.toggle("active", b.dataset.scenario === scenId);
       });
       renderState(data.crew_state, data.decision);
-      fetchPillar1Analysis();
-      fetchPillar2Analysis(scenId);
-      fetchPillar3Analysis(scenId);
+      refreshActivePillarTab(scenId);
     } catch (err) {
       console.error("Failed to load initial state:", err);
     }
@@ -498,9 +538,7 @@ function initAegisApp() {
         p3OutageInput.value = data.crew_state.astro_twin.exercise_deficit_days ?? 0;
       }
 
-      fetchPillar1Analysis(modCode, fluxVal);
-      fetchPillar2Analysis(scenarioId);
-      fetchPillar3Analysis(scenarioId);
+      refreshActivePillarTab(scenarioId, modCode, fluxVal);
     } catch (err) {
       console.error(`Failed to load scenario ${scenarioId}:`, err);
     }
@@ -522,10 +560,12 @@ function initAegisApp() {
     const willBeOffline = !isCurrentlyOffline;
 
     if (commsBadge) commsBadge.className = willBeOffline ? "status-indicator offline" : "status-indicator";
-    if (commsStatusText) commsStatusText.textContent = willBeOffline ? "OFFLINE [20-MIN BLACKOUT ACTIVE]" : "ONLINE [EARTH LINK ACTIVE]";
+    if (commsStatusText) commsStatusText.textContent = willBeOffline ? "Offline (20m blackout)" : "Earth link online";
     if (blackoutBanner) blackoutBanner.style.display = willBeOffline ? "flex" : "none";
     if (toggleCommsBtn) {
-      toggleCommsBtn.innerHTML = willBeOffline ? "🔴 Restore Earth Link" : "⚡ Toggle Blackout";
+      toggleCommsBtn.innerHTML = willBeOffline
+        ? `${svgIcon("wifi", "icon icon-sm")}<span class="header-btn-label">Restore Earth link</span>`
+        : `${svgIcon("wifi-off", "icon icon-sm")}<span class="header-btn-label">Simulate blackout</span>`;
       if (willBeOffline) toggleCommsBtn.classList.add("btn-blackout-active");
       else toggleCommsBtn.classList.remove("btn-blackout-active");
     }
@@ -549,9 +589,7 @@ function initAegisApp() {
         });
 
         // Trigger pillar refreshes non-blockingly so failures or slow model runs don't affect toggle state
-        fetchPillar1Analysis().catch(e => console.warn("Pillar 1 refresh warning:", e));
-        fetchPillar2Analysis(scenId).catch(e => console.warn("Pillar 2 refresh warning:", e));
-        fetchPillar3Analysis(scenId).catch(e => console.warn("Pillar 3 refresh warning:", e));
+        refreshActivePillarTab(scenId);
       } else {
         await fetchInitialState();
       }
@@ -580,8 +618,54 @@ function initAegisApp() {
     }
   }
 
+  const BUILTIN_AUDIO_LABELS = {
+    "normal_log.wav": "normal_log.wav (Nominal Crew Report)",
+    "fatigued_log.wav": "fatigued_log.wav (Exhausted / Cognitive Strain)",
+    "stressed_log.wav": "stressed_log.wav (High Isolation Stress)",
+    "test_audio.wav": "test_audio.wav (NASA Benchmark Sample)"
+  };
+
+  function ensureAudioOptionSelected(audioPath, customLabel) {
+    if (!p2AudioSelect || !audioPath) return;
+    let opt = Array.from(p2AudioSelect.options).find(o => o.value === audioPath);
+    if (!opt) {
+      opt = document.createElement("option");
+      opt.value = audioPath;
+      opt.textContent = customLabel || BUILTIN_AUDIO_LABELS[audioPath] || `${audioPath.replace(/^uploads\//, "")} (Recorded / Uploaded)`;
+      p2AudioSelect.appendChild(opt);
+    } else if (customLabel) {
+      opt.textContent = customLabel;
+    }
+    p2AudioSelect.value = audioPath;
+  }
+
+  async function syncPillar2AudioOptions() {
+    if (!p2AudioSelect) return;
+    try {
+      const res = await fetch("/api/pillar2/audio_options");
+      if (!res.ok) return;
+      const data = await res.json();
+      const files = Array.isArray(data.audio_files) ? data.audio_files : [];
+      const currentVal = p2AudioSelect.value;
+      files.forEach(filePath => {
+        if (!Array.from(p2AudioSelect.options).some(o => o.value === filePath)) {
+          const opt = document.createElement("option");
+          opt.value = filePath;
+          opt.textContent = BUILTIN_AUDIO_LABELS[filePath] || `${filePath.replace(/^uploads\//, "")} (Uploaded Voice Log)`;
+          p2AudioSelect.appendChild(opt);
+        }
+      });
+      if (currentVal && Array.from(p2AudioSelect.options).some(o => o.value === currentVal)) {
+        p2AudioSelect.value = currentVal;
+      }
+    } catch (err) {
+      console.warn("Could not sync Pillar 2 audio options:", err);
+    }
+  }
+
   async function fetchPillar2Analysis(scenarioId) {
     try {
+      await syncPillar2AudioOptions();
       const activeBtn = document.querySelector(".scenario-btn.active");
       const currentScen = scenarioId || (activeBtn ? activeBtn.dataset.scenario : "normal");
       const res = await fetch(`/api/pillar2/analysis?scenario=${encodeURIComponent(currentScen)}`);
@@ -601,25 +685,41 @@ function initAegisApp() {
   async function runPillar2Inference() {
     try {
       if (p2RunInferenceBtn) {
-        p2RunInferenceBtn.textContent = "⏳ RUNNING WHISPER & CNN INFERENCE...";
+        p2RunInferenceBtn.innerHTML = `${svgIcon("clock", "icon icon-sm")}<span>Running acoustic inference...</span>`;
         p2RunInferenceBtn.disabled = true;
       }
       const audioPath = p2AudioSelect ? p2AudioSelect.value : null;
       const crewId = p2AstroSelect ? p2AstroSelect.value : "ASTRO-01";
+      if (p2SelectedFileTag && audioPath) {
+        p2SelectedFileTag.textContent = `Analyzing: ${audioPath.replace(/^uploads\//, "")}...`;
+      }
 
       const res = await fetch("/api/pillar2/process_audio", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ audio_path: audioPath, crew_id: crewId })
       });
+      if (!res.ok) {
+        const errPayload = await res.json().catch(() => ({}));
+        throw new Error(errPayload.detail || `HTTP ${res.status}`);
+      }
       const data = await res.json();
+      if (data.crew_state && data.decision) {
+        renderState(data.crew_state, data.decision);
+      }
       renderPillar2Page(data);
-      fetchInitialState();
+      if (p2SelectedFileTag) {
+        const analyzedName = data.audio_file || (audioPath ? audioPath.replace(/^uploads\//, "") : "audio");
+        p2SelectedFileTag.textContent = `Analyzed: ${analyzedName}`;
+      }
     } catch (err) {
       console.error("Failed to run speech inference:", err);
+      if (p2SelectedFileTag) {
+        p2SelectedFileTag.textContent = `Error: ${err.message || "Inference failed"}`;
+      }
     } finally {
       if (p2RunInferenceBtn) {
-        p2RunInferenceBtn.textContent = "⚡ ANALYZE SELECTED AUDIO";
+        p2RunInferenceBtn.innerHTML = `${svgIcon("play", "icon icon-sm")}<span>Analyze selected audio</span>`;
         p2RunInferenceBtn.disabled = false;
       }
     }
@@ -697,7 +797,7 @@ function initAegisApp() {
   async function uploadAndProcessVoiceLog(fileOrBlob, filename) {
     try {
       if (p2RunInferenceBtn) {
-        p2RunInferenceBtn.textContent = "⏳ PROCESSING LIVE/UPLOADED VOICE...";
+        p2RunInferenceBtn.innerHTML = `${svgIcon("clock", "icon icon-sm")}<span>Processing voice sample...</span>`;
         p2RunInferenceBtn.disabled = true;
       }
       if (p2SelectedFileTag) {
@@ -713,12 +813,23 @@ function initAegisApp() {
         method: "POST",
         body: formData
       });
+      if (!res.ok) {
+        const errPayload = await res.json().catch(() => ({}));
+        throw new Error(errPayload.detail || `HTTP ${res.status}`);
+      }
       const data = await res.json();
+      const uploadedPath = data.audio_path || (data.audio_file ? `uploads/${data.audio_file}` : null);
+      if (uploadedPath) {
+        const label = `${data.audio_file || uploadedPath.replace(/^uploads\//, "")} (${filename})`;
+        ensureAudioOptionSelected(uploadedPath, label);
+      }
+      if (data.crew_state && data.decision) {
+        renderState(data.crew_state, data.decision);
+      }
       renderPillar2Page(data);
-      fetchInitialState();
 
       if (p2SelectedFileTag) {
-        p2SelectedFileTag.textContent = `✓ Ingested: ${filename}`;
+        p2SelectedFileTag.textContent = `Ingested: ${filename}`;
       }
     } catch (err) {
       console.error("Failed to upload and analyze voice log:", err);
@@ -727,7 +838,7 @@ function initAegisApp() {
       }
     } finally {
       if (p2RunInferenceBtn) {
-        p2RunInferenceBtn.textContent = "⚡ ANALYZE SELECTED AUDIO";
+        p2RunInferenceBtn.innerHTML = `${svgIcon("play", "icon icon-sm")}<span>Analyze selected audio</span>`;
         p2RunInferenceBtn.disabled = false;
       }
     }
@@ -739,7 +850,14 @@ function initAegisApp() {
     const anom = data.anomalies || {};
     const zs = anom.z_scores || {};
 
-    if (p2TranscriptDisplay && tel.transcript) {
+    if (data.audio_path && p2AudioSelect) {
+      ensureAudioOptionSelected(data.audio_path);
+    }
+    if (data.crew_id && p2AstroSelect) {
+      p2AstroSelect.value = data.crew_id;
+    }
+
+    if (p2TranscriptDisplay && tel.transcript !== undefined && tel.transcript !== null) {
       p2TranscriptDisplay.textContent = `"${tel.transcript}"`;
     }
 
@@ -760,9 +878,13 @@ function initAegisApp() {
       p2MoodSigma.textContent = `${zs.mood_sigma > 0 ? '+' : ''}${zs.mood_sigma.toFixed(1)}σ`;
     }
 
-    if (pageP2Cognitive && tel.mood_valence !== undefined && tel.acoustic_fatigue_score !== undefined) {
-      const strain = Math.min(1.0, Math.max(0.0, (1.0 - tel.mood_valence) / 2.0 * 0.7 + tel.acoustic_fatigue_score * 0.3));
-      pageP2Cognitive.textContent = strain.toFixed(2);
+    if (pageP2Cognitive) {
+      if (tel.cognitive_strain !== undefined) {
+        pageP2Cognitive.textContent = Number(tel.cognitive_strain).toFixed(2);
+      } else if (tel.mood_valence !== undefined && tel.acoustic_fatigue_score !== undefined) {
+        const strain = Math.min(1.0, Math.max(0.0, (1.0 - tel.mood_valence) / 2.0 * 0.7 + tel.acoustic_fatigue_score * 0.3));
+        pageP2Cognitive.textContent = strain.toFixed(2);
+      }
     }
 
     if (pageP2Fatigue && tel.acoustic_fatigue_score !== undefined) {
@@ -774,11 +896,12 @@ function initAegisApp() {
     }
 
     if (p2HypoxiaSigma && zs.hypoxia_sigma !== undefined) {
-      p2HypoxiaSigma.textContent = `+${zs.hypoxia_sigma.toFixed(1)}σ`;
+      p2HypoxiaSigma.textContent = `${zs.hypoxia_sigma > 0 ? '+' : ''}${zs.hypoxia_sigma.toFixed(1)}σ`;
     }
 
     if (pageP2ZScore && zs.fatigue_sigma !== undefined) {
-      pageP2ZScore.textContent = `+${zs.fatigue_sigma.toFixed(1)}σ`;
+      pageP2ZScore.textContent = `${zs.fatigue_sigma > 0 ? '+' : ''}${zs.fatigue_sigma.toFixed(1)}σ`;
+      pageP2ZScore.style.color = (anom.fatigue_alert || zs.fatigue_sigma > 1.5) ? "var(--critical)" : "var(--success)";
     }
 
     if (p2FatigueAlert) {
@@ -837,7 +960,7 @@ function initAegisApp() {
   async function runPillar3Simulation() {
     try {
       if (p3RunSimBtn) {
-        p3RunSimBtn.textContent = "⏳ SIMULATING DIGITAL TWIN...";
+        p3RunSimBtn.innerHTML = `${svgIcon("clock", "icon icon-sm")}<span>Simulating digital twin...</span>`;
         p3RunSimBtn.disabled = true;
       }
 
@@ -872,7 +995,7 @@ function initAegisApp() {
       console.error("Failed to run Astro-Twin simulation:", err);
     } finally {
       if (p3RunSimBtn) {
-        p3RunSimBtn.textContent = "🧬 RUN DIGITAL TWIN SIMULATION";
+        p3RunSimBtn.innerHTML = `${svgIcon("dna", "icon icon-sm")}<span>Run digital twin simulation</span>`;
         p3RunSimBtn.disabled = false;
       }
     }
@@ -937,11 +1060,11 @@ function initAegisApp() {
           : `<span class="badge badge-low" style="font-size:0.75rem;">ARED NOMINAL</span>`;
 
         html += `
-          <tr ${inOutage ? 'style="background: rgba(255, 23, 68, 0.08);"' : ''}>
+          <tr ${inOutage ? 'style="background: var(--critical-soft);"' : ''}>
             <td style="font-family: var(--font-mono); font-weight: 600;">Day ${d}</td>
             <td style="font-family: var(--font-mono);">${nom}</td>
-            <td style="font-family: var(--font-mono); ${inOutage ? 'color: var(--accent-red); font-weight:700;' : ''}">${out}</td>
-            <td style="font-family: var(--font-mono); color: ${inOutage ? 'var(--accent-amber)' : 'var(--text-muted)'};">${diff}</td>
+            <td style="font-family: var(--font-mono); ${inOutage ? 'color: var(--critical); font-weight:700;' : ''}">${out}</td>
+            <td style="font-family: var(--font-mono); color: ${inOutage ? 'var(--warning)' : 'var(--text-3)'};">${diff}</td>
             <td>${statusTag}</td>
           </tr>
         `;
@@ -975,19 +1098,19 @@ function initAegisApp() {
     const isOffline = state.comms_mode === "OFFLINE";
     if (isOffline) {
       if (commsBadge) commsBadge.className = "status-indicator offline";
-      if (commsStatusText) commsStatusText.textContent = "OFFLINE [20-MIN BLACKOUT ACTIVE]";
+      if (commsStatusText) commsStatusText.textContent = "Offline (20m blackout)";
     } else {
       if (commsBadge) commsBadge.className = "status-indicator";
-      if (commsStatusText) commsStatusText.textContent = "ONLINE [EARTH LINK ACTIVE]";
+      if (commsStatusText) commsStatusText.textContent = "Earth link online";
     }
 
     if (toggleCommsBtn) {
       if (isOffline) {
-        toggleCommsBtn.innerHTML = "🔴 Restore Earth Link";
+        toggleCommsBtn.innerHTML = `${svgIcon("wifi", "icon icon-sm")}<span class="header-btn-label">Restore Earth link</span>`;
         toggleCommsBtn.classList.add("btn-blackout-active");
         toggleCommsBtn.title = "Earth link currently severed (20-min delay). Click to restore online comms.";
       } else {
-        toggleCommsBtn.innerHTML = "⚡ Toggle Blackout";
+        toggleCommsBtn.innerHTML = `${svgIcon("wifi-off", "icon icon-sm")}<span class="header-btn-label">Simulate blackout</span>`;
         toggleCommsBtn.classList.remove("btn-blackout-active");
         toggleCommsBtn.title = "Simulate 20-min communication blackout with Earth";
       }
@@ -1006,23 +1129,29 @@ function initAegisApp() {
     const twin = state.astro_twin;
 
     setSeverityBadge(stripRadBadge, rad.risk_level);
-    stripRadSummary.innerHTML = `Flux: <strong>${rad.dose_rate_msv_h.toFixed(2)} mSv/h</strong> | Shelter: <strong>${rad.recommended_safe_module.split(':')[0]}</strong>`;
+    if (stripRadVal) stripRadVal.textContent = rad.dose_rate_msv_h.toFixed(2);
+    stripRadSummary.innerHTML = `Shelter: <strong>${rad.recommended_safe_module.split(':')[0]}</strong> &middot; Cum: <strong>${rad.cumulative_dose_msv.toFixed(1)} mSv</strong>`;
 
     const voiceLevel = voice.hypoxia_indicator > 0.35 ? "CRITICAL" : (voice.cognitive_strain_score > 0.5 ? "HIGH" : (voice.cognitive_strain_score > 0.3 ? "MEDIUM" : "NOMINAL"));
     setSeverityBadge(stripVoiceBadge, voiceLevel);
-    stripVoiceSummary.innerHTML = `Strain: <strong>${voice.cognitive_strain_score.toFixed(2)}</strong> | Fatigue: <strong>${voice.fatigue_score.toFixed(2)}</strong>`;
+    if (stripVoiceVal) stripVoiceVal.textContent = voice.cognitive_strain_score.toFixed(2);
+    stripVoiceSummary.innerHTML = `Fatigue: <strong>${voice.fatigue_score.toFixed(2)}</strong> &middot; Drift: <strong>+${voice.deviation_from_baseline_z.toFixed(1)}&sigma;</strong>`;
 
     const twinLevel = twin.exercise_deficit_days > 2 ? "HIGH" : (twin.exercise_deficit_days > 0 ? "MEDIUM" : "NOMINAL");
     setSeverityBadge(stripTwinBadge, twinLevel);
-    stripTwinSummary.innerHTML = `Bone: <strong>-${twin.projected_bone_loss_pct_mo.toFixed(1)}%/mo</strong> | Deficit: <strong>${twin.exercise_deficit_days}d</strong>`;
+    if (stripTwinVal) stripTwinVal.textContent = `-${twin.projected_bone_loss_pct_mo.toFixed(1)}`;
+    stripTwinSummary.innerHTML = `Atrophy: <strong>-${twin.projected_muscle_atrophy_pct.toFixed(1)}%</strong> &middot; Deficit: <strong>${twin.exercise_deficit_days}d</strong>`;
 
     setSeverityBadge(stripDecisionBadge, decision.risk_level);
     stripScoreNum.textContent = decision.risk_score.toFixed(2);
+    if (stripDecisionSummary) {
+      stripDecisionSummary.innerHTML = `Mode: <strong>${decision.mode}</strong> &middot; Conf: <strong>${Math.round(decision.confidence * 100)}%</strong>`;
+    }
 
     // 3. Pillar 1: Radiation Safe-Route (Real)
     p1DoseRate.innerHTML = `${rad.dose_rate_msv_h.toFixed(2)} <small>mSv/h</small>`;
     p1CumDose.innerHTML = `${rad.cumulative_dose_msv.toFixed(1)} <small>mSv</small>`;
-    p1SpeActive.textContent = rad.spe_active ? "YES (ACTIVE)" : "NO";
+    p1SpeActive.textContent = rad.spe_active ? "Yes (Active)" : "No";
     p1CurrentModule.textContent = rad.current_module;
     p1Shielding.textContent = `(${rad.shielding_rating_g_cm2.toFixed(1)} g/cm²)`;
     p1SafeModule.textContent = rad.recommended_safe_module;
@@ -1039,7 +1168,7 @@ function initAegisApp() {
 
     valHypoxia.textContent = voice.hypoxia_indicator.toFixed(2);
     barHypoxia.style.width = `${Math.min(voice.hypoxia_indicator * 100, 100)}%`;
-    barHypoxia.style.background = voice.hypoxia_indicator > 0.35 ? "#ff1744" : "#00e5ff";
+    barHypoxia.style.background = voice.hypoxia_indicator > 0.35 ? "#B42318" : "#245BC7";
 
     valBaselineDev.textContent = `+${voice.deviation_from_baseline_z.toFixed(1)}σ`;
     setSeverityBadge(voiceRiskBadge, voiceLevel);
@@ -1122,7 +1251,7 @@ function initAegisApp() {
     confidenceVal.textContent = `${Math.round(decision.confidence * 100)}%`;
 
     if (decision.uncertainty && decision.uncertainty.length > 0) {
-      uncertaintyText.innerHTML = `<span style="color: #ffab00;">${decision.uncertainty.join("; ")}</span>`;
+      uncertaintyText.innerHTML = `<span style="color: var(--warning); font-weight: 600;">${decision.uncertainty.join("; ")}</span>`;
     } else {
       uncertaintyText.textContent = "None detected. High SNR across all telemetry channels.";
     }
@@ -1242,12 +1371,12 @@ function initAegisApp() {
             <div class="tsc-body">
               <div class="tsc-row">Observed: <strong>${sig.value}</strong></div>
               <div class="tsc-row">Threshold: <code>${sig.threshold}</code></div>
-              <div class="tsc-row tsc-explanation-row" style="color: ${isTriggered ? '#ffd54f' : '#aaa'};">${sig.explanation}</div>
+              <div class="tsc-row tsc-explanation-row" style="color: ${isTriggered ? 'var(--warning)' : 'var(--text-2)'};">${sig.explanation}</div>
             </div>
           </div>
           <div>
             <span class="tsc-status-tag ${isTriggered ? 'triggered' : 'nominal'}">
-              ${isTriggered ? '✓ ' + sig.source + ' Escalation Triggered' : '● Within Baseline Bounds'}
+              ${isTriggered ? sig.source + ' escalation triggered' : 'Within baseline bounds'}
             </span>
           </div>
         `;
@@ -1263,7 +1392,7 @@ function initAegisApp() {
         item.className = `trace-synergy-item ${rule.triggered ? 'active' : ''}`;
         item.innerHTML = `
           <div class="tsi-info">
-            <span class="tsi-name">${rule.triggered ? '✓' : '○'} ${rule.name}</span>
+            <span class="tsi-name">${rule.name}</span>
             <span class="tsi-exp">${rule.explanation}</span>
           </div>
           <div class="tsi-points">+${rule.contribution.toFixed(2)}</div>
@@ -1321,11 +1450,11 @@ function initAegisApp() {
     const deltaExp = typeof impact.delta_exposure_msv === "number" ? impact.delta_exposure_msv : 0.0;
     const cfScore = typeof cf.risk_score === "number" ? cf.risk_score : 0.10;
 
-    if (whatIfDelayTitle) whatIfDelayTitle.textContent = `WITH ${delayMin} MIN DELAY`;
+    if (whatIfDelayTitle) whatIfDelayTitle.textContent = `With ${delayMin} min delay`;
     if (whatIfCounterBadge) setSeverityBadge(whatIfCounterBadge, cf.risk_level);
     if (whatIfCounterExposure) {
       whatIfCounterExposure.innerHTML = `${projExp.toFixed(2)} <small>mSv</small>`;
-      whatIfCounterExposure.style.color = deltaExp > 0.10 ? "var(--accent-red)" : "var(--accent-cyan)";
+      whatIfCounterExposure.style.color = deltaExp > 0.10 ? "var(--critical)" : "var(--accent)";
     }
     if (whatIfCounterScore) whatIfCounterScore.textContent = cfScore.toFixed(2);
     if (whatIfCounterAction) whatIfCounterAction.textContent = cf.recommended_action || "CONTINUE NOMINAL OPERATIONS";
@@ -1344,11 +1473,11 @@ function initAegisApp() {
 
     if (whatIfImpactText) {
       if (impact.level_escalated) {
-        whatIfImpactText.innerHTML = `<span style="color: var(--accent-red);">${impact.summary || 'Escalated'} &bull; RISK ESCALATED!</span>`;
+        whatIfImpactText.innerHTML = `<span style="color: var(--critical); font-weight: 600;">${impact.summary || 'Escalated'} &bull; Risk escalated</span>`;
       } else if (deltaExp > 0) {
         whatIfImpactText.innerHTML = `${impact.summary || ''} &bull; Stable severity tier`;
       } else {
-        whatIfImpactText.textContent = "Immediate action &bull; Zero delay exposure penalty";
+        whatIfImpactText.textContent = "Immediate action · Zero delay exposure penalty";
       }
     }
 
@@ -1357,7 +1486,9 @@ function initAegisApp() {
     }
 
     if (whatIfImpactIcon) {
-      whatIfImpactIcon.textContent = impact.level_escalated ? "⚠️" : (deltaExp > 0 ? "⏱️" : "⚖️");
+      whatIfImpactIcon.innerHTML = impact.level_escalated
+        ? svgIcon("alert-triangle", "icon icon-md")
+        : (deltaExp > 0 ? svgIcon("clock", "icon icon-md") : svgIcon("scale", "icon icon-md"));
     }
   }
 
@@ -1431,12 +1562,12 @@ function initAegisApp() {
       data.compartment_risks.forEach(c => {
         const tr = document.createElement("tr");
         const isTarget = c.module_id === data.safest_shelter;
-        tr.style.background = isTarget ? "rgba(0, 230, 118, 0.06)" : "";
+        tr.style.background = isTarget ? "var(--success-soft)" : "";
         tr.innerHTML = `
-          <td><strong>${c.module_id}</strong> ${isTarget ? '🟢' : ''}</td>
+          <td><strong>${c.module_id}</strong> ${isTarget ? '<span class="badge badge-low" style="margin-left: 4px;">Shelter</span>' : ''}</td>
           <td>${c.name}</td>
           <td>${c.shielding_pct} (${c.shielding_g_cm2} g/cm²)</td>
-          <td><strong style="color: ${c.internal_dose_mSv_h > 50 ? '#ff1744' : '#fff'};">${c.internal_dose_mSv_h.toFixed(1)} mSv/hr</strong></td>
+          <td><strong style="color: ${c.internal_dose_mSv_h > 50 ? 'var(--critical)' : 'var(--text)'};">${c.internal_dose_mSv_h.toFixed(1)} mSv/hr</strong></td>
           <td><span class="badge ${getBadgeClass(c.hazard_level)}">${c.hazard_level}</span></td>
         `;
         p1CompartmentTableBody.appendChild(tr);
@@ -1518,36 +1649,17 @@ function initAegisApp() {
   }
 
   function setHeroRiskStyle(pillEl, level) {
-    pillEl.className = "risk-pill";
-    switch (level?.toUpperCase()) {
-      case "CRITICAL":
-        pillEl.style.background = "rgba(255, 23, 68, 0.25)";
-        pillEl.style.color = "#ff1744";
-        pillEl.style.borderColor = "#ff1744";
-        break;
-      case "HIGH":
-        pillEl.style.background = "rgba(255, 87, 34, 0.2)";
-        pillEl.style.color = "#ff7043";
-        pillEl.style.borderColor = "#ff7043";
-        break;
-      case "MEDIUM":
-      case "MODERATE":
-        pillEl.style.background = "rgba(255, 171, 0, 0.2)";
-        pillEl.style.color = "#ffab00";
-        pillEl.style.borderColor = "#ffab00";
-        break;
-      default:
-        pillEl.style.background = "rgba(0, 230, 118, 0.2)";
-        pillEl.style.color = "#00e676";
-        pillEl.style.borderColor = "#00e676";
-        break;
-    }
+    if (!pillEl) return;
+    pillEl.className = `risk-pill badge ${getBadgeClass(level)}`;
+    pillEl.style.background = "";
+    pillEl.style.color = "";
+    pillEl.style.borderColor = "";
   }
 
   function getScoreColor(val) {
-    if (val > 0.6) return "#ff1744";
-    if (val > 0.3) return "#ffab00";
-    return "#00e5ff";
+    if (val > 0.6) return "#B42318";
+    if (val > 0.3) return "#946000";
+    return "#245BC7";
   }
 
   function setFusionCardStyle(cardEl, score, status) {
@@ -1569,21 +1681,17 @@ function initAegisApp() {
     const levelUpper = (level || "").toUpperCase();
     const titleEl = stepEl.querySelector(".step-title");
     if (levelUpper === "CRITICAL") {
-      stepEl.style.borderColor = "#ff1744";
-      stepEl.style.background = "rgba(255, 23, 68, 0.15)";
-      if (titleEl) titleEl.style.color = "#ff1744";
-    } else if (levelUpper === "HIGH") {
-      stepEl.style.borderColor = "#ff7043";
-      stepEl.style.background = "rgba(255, 87, 34, 0.15)";
-      if (titleEl) titleEl.style.color = "#ff7043";
-    } else if (levelUpper === "MEDIUM" || levelUpper === "MODERATE") {
-      stepEl.style.borderColor = "#ffab00";
-      stepEl.style.background = "rgba(255, 171, 0, 0.15)";
-      if (titleEl) titleEl.style.color = "#ffab00";
+      stepEl.style.borderColor = "var(--critical-border)";
+      stepEl.style.background = "var(--critical-soft)";
+      if (titleEl) titleEl.style.color = "var(--critical)";
+    } else if (levelUpper === "HIGH" || levelUpper === "MEDIUM" || levelUpper === "MODERATE") {
+      stepEl.style.borderColor = "var(--warning-border)";
+      stepEl.style.background = "var(--warning-soft)";
+      if (titleEl) titleEl.style.color = "var(--warning)";
     } else {
-      stepEl.style.borderColor = "#00e676";
-      stepEl.style.background = "rgba(0, 230, 118, 0.15)";
-      if (titleEl) titleEl.style.color = "#00e676";
+      stepEl.style.borderColor = "var(--success-border)";
+      stepEl.style.background = "var(--success-soft)";
+      if (titleEl) titleEl.style.color = "var(--success)";
     }
   }
 
@@ -1605,6 +1713,13 @@ function initAegisApp() {
   const simSyncDashboardBtn = document.getElementById("simSyncDashboardBtn");
   const simToggleViewBtn = document.getElementById("simToggleViewBtn");
   const simulatorBodyContainer = document.getElementById("simulatorBodyContainer");
+  const simLiveBadge = document.getElementById("simLiveBadge");
+
+  function setSimSyncState(isSynced) {
+    if (!simLiveBadge) return;
+    simLiveBadge.className = isSynced ? "sim-sync-state is-synced" : "sim-sync-state is-unsynced";
+    simLiveBadge.innerHTML = `<span class="sync-dot"></span><span>${isSynced ? "Synced with dashboard" : "Unsynced preview"}</span>`;
+  }
 
   const simMeterScore = document.getElementById("simMeterScore");
   const simMeterArc = document.getElementById("simMeterArc");
@@ -1723,9 +1838,10 @@ function initAegisApp() {
 
       if (syncToDashboard) {
         renderState(data.crew_state, data.decision);
+        setSimSyncState(true);
         if (simSyncDashboardBtn) {
           const origText = simSyncDashboardBtn.innerHTML;
-          simSyncDashboardBtn.innerHTML = "✓ Synced Successfully!";
+          simSyncDashboardBtn.innerHTML = `${svgIcon("check", "icon icon-sm")}<span>Synced to dashboard</span>`;
           setTimeout(() => {
             simSyncDashboardBtn.innerHTML = origText;
           }, 2000);
@@ -1751,16 +1867,15 @@ function initAegisApp() {
       const offset = totalCircumference - (score * totalCircumference);
       simMeterArc.style.strokeDashoffset = String(Math.max(0, offset));
 
-      let strokeColor = "#10b981"; // Low (emerald)
-      if (score >= 0.75 || dec.risk_level === "CRITICAL") strokeColor = "#f43f5e";
-      else if (score >= 0.50 || dec.risk_level === "HIGH") strokeColor = "#fb923c";
-      else if (score >= 0.30 || dec.risk_level === "MEDIUM") strokeColor = "#f59e0b";
+      let strokeColor = "#18734A";
+      if (score >= 0.75 || dec.risk_level === "CRITICAL") strokeColor = "#B42318";
+      else if (score >= 0.30 || dec.risk_level === "HIGH" || dec.risk_level === "MEDIUM") strokeColor = "#946000";
       simMeterArc.style.stroke = strokeColor;
     }
 
     if (simRiskLevelBadge) {
       simRiskLevelBadge.textContent = `${dec.risk_level} RISK`;
-      simRiskLevelBadge.className = `sim-level-badge ${getBadgeClass(dec.risk_level)}`;
+      simRiskLevelBadge.className = `sim-level-badge badge ${getBadgeClass(dec.risk_level)}`;
     }
 
     if (simFormulaText && sim.formula) {
@@ -1771,11 +1886,11 @@ function initAegisApp() {
     if (simSynergyBanner) {
       if (sim.synergy_active) {
         simSynergyBanner.className = "sim-synergy-banner active";
-        if (simSynergyTitle) simSynergyTitle.textContent = "⚡ Multi-Signal Synergy Escalated (+0.20)";
+        if (simSynergyTitle) simSynergyTitle.textContent = "Multi-signal synergy escalated (+0.20)";
         if (simSynergyDesc) simSynergyDesc.textContent = "Compound stress cascade: Concurrent radiation surge, cognitive impairment, and physical deconditioning non-linearly accelerates failure risk.";
       } else {
         simSynergyBanner.className = "sim-synergy-banner";
-        if (simSynergyTitle) simSynergyTitle.textContent = "No Multi-Signal Escalation";
+        if (simSynergyTitle) simSynergyTitle.textContent = "No multi-signal escalation";
         if (simSynergyDesc) simSynergyDesc.textContent = "Telemetry parameters remain within non-compounding operational thresholds.";
       }
     }
@@ -1832,6 +1947,8 @@ function initAegisApp() {
       else btn.classList.remove("active");
     });
 
+    syncAllRangeFills();
+    setSimSyncState(presetKey === "nominal");
     triggerSimulatorUpdate(false);
   }
 
@@ -1847,6 +1964,7 @@ function initAegisApp() {
     if (slider) {
       slider.addEventListener("input", () => {
         document.querySelectorAll(".preset-btn").forEach(b => b.classList.remove("active"));
+        setSimSyncState(false);
         triggerSimulatorUpdate(false);
       });
     }
@@ -1856,6 +1974,7 @@ function initAegisApp() {
     if (select) {
       select.addEventListener("change", () => {
         document.querySelectorAll(".preset-btn").forEach(b => b.classList.remove("active"));
+        setSimSyncState(false);
         triggerSimulatorUpdate(false);
       });
     }
@@ -1877,8 +1996,8 @@ function initAegisApp() {
   if (simToggleViewBtn && simulatorBodyContainer) {
     simToggleViewBtn.addEventListener("click", () => {
       const isHidden = simulatorBodyContainer.style.display === "none";
-      simulatorBodyContainer.style.display = isHidden ? "block" : "none";
-      simToggleViewBtn.textContent = isHidden ? "📐 Minimize View" : "🔍 Expand Simulator";
+      simulatorBodyContainer.style.display = isHidden ? "" : "none";
+      simToggleViewBtn.textContent = isHidden ? "Collapse view" : "Expand view";
     });
   }
 
@@ -2035,9 +2154,9 @@ function initAegisApp() {
       applyCentrifugeData(centrifugeData);
       // Flash feedback
       if (btnActuateCentrifuge) {
-        const orig = btnActuateCentrifuge.textContent;
-        btnActuateCentrifuge.textContent = "✓ INTERVENTIONS DEPLOYED";
-        setTimeout(() => { btnActuateCentrifuge.textContent = orig; }, 2000);
+        const orig = btnActuateCentrifuge.innerHTML;
+        btnActuateCentrifuge.innerHTML = `${svgIcon("check", "icon icon-sm")}<span>Interventions deployed</span>`;
+        setTimeout(() => { btnActuateCentrifuge.innerHTML = orig; }, 2000);
       }
     } catch (err) {
       console.error("Actuation error:", err);
@@ -2051,7 +2170,7 @@ function initAegisApp() {
       if (!res.ok) throw new Error("Injection failed");
       const data = await res.json();
       updateScenarioDropdownDisplay("centrifuge_despin");
-      updateMissionControlDashboard(data.crew_state, data.decision);
+      renderState(data.crew_state, data.decision);
       switchTab("tab-mission-control");
     } catch (err) {
       console.error("Injection error:", err);
@@ -2108,9 +2227,11 @@ function initAegisApp() {
     if (data.flight_surgeon_verdict) {
       const v = data.flight_surgeon_verdict;
       if (badgeVerdictAlert) {
+        const isStab = v.alert_classification?.includes("STABILIZED");
         badgeVerdictAlert.textContent = v.alert_classification || "RED_CRITICAL_EMERGENCY";
-        badgeVerdictAlert.style.color = v.alert_classification?.includes("STABILIZED") ? "#34d399" : "#f43f5e";
-        badgeVerdictAlert.style.borderColor = v.alert_classification?.includes("STABILIZED") ? "rgba(52, 211, 153, 0.5)" : "rgba(244, 63, 94, 0.5)";
+        badgeVerdictAlert.className = `badge ${isStab ? "badge-low" : "badge-critical"}`;
+        badgeVerdictAlert.style.color = "";
+        badgeVerdictAlert.style.borderColor = "";
       }
       if (centrifugeVerdictRationale) {
         centrifugeVerdictRationale.textContent = v.rationale || "";
@@ -2133,6 +2254,7 @@ function initAegisApp() {
       updateCentrifugeScrubberVisuals(data.time_series[data.time_series.length - 1]);
       if (simScrubber) simScrubber.value = simScrubber.max;
     }
+    syncAllRangeFills();
   }
 
   // Scrubber Update
@@ -2156,14 +2278,14 @@ function initAegisApp() {
         svgHabitatRing.style.animation = "none";
         if (ringGovernorTag) {
           ringGovernorTag.textContent = "DESPIN COMPLETE";
-          ringGovernorTag.style.color = "#f43f5e";
+          ringGovernorTag.style.color = "var(--critical)";
         }
       } else {
         const animDuration = Math.max(0.5, 60 / Math.max(0.1, parseFloat(rpm)));
         svgHabitatRing.style.animation = `habitatRingSpin ${animDuration}s linear infinite`;
         if (ringGovernorTag) {
           ringGovernorTag.textContent = step.time_s === 0 ? "GOVERNOR NOMINAL" : "GOVERNOR SCRAMMED";
-          ringGovernorTag.style.color = step.time_s === 0 ? "#10b981" : "#f59e0b";
+          ringGovernorTag.style.color = step.time_s === 0 ? "var(--success)" : "var(--warning)";
         }
       }
     }
@@ -2176,12 +2298,12 @@ function initAegisApp() {
     }
     const isLocked = !!cfgDeckLock?.checked || !!cfgStrappedOnset?.checked;
     if (statCrewKinematics) {
-      statCrewKinematics.textContent = isLocked ? "SECURED (DECK-LOCKED)" : (step.g_level < 0.05 ? "FREE-FLOAT TUMBLING" : "LOSING TRACTION");
-      statCrewKinematics.style.color = isLocked ? "#10b981" : (step.g_level < 0.05 ? "#f43f5e" : "#f59e0b");
+      statCrewKinematics.textContent = isLocked ? "Secured (Deck-locked)" : (step.g_level < 0.05 ? "Free-float tumbling" : "Losing traction");
+      statCrewKinematics.style.color = isLocked ? "var(--success)" : (step.g_level < 0.05 ? "var(--critical)" : "var(--warning)");
     }
 
     // Update Crew Dots
-    const dotColor = isLocked ? "#10b981" : (step.g_level < 0.05 ? "#f43f5e" : "#f59e0b");
+    const dotColor = isLocked ? "#18734A" : (step.g_level < 0.05 ? "#B42318" : "#946000");
     [1, 2, 3, 4].forEach(id => {
       const dot = document.getElementById(`crewDot${id}`);
       if (dot) dot.setAttribute("fill", dotColor);
@@ -2191,37 +2313,41 @@ function initAegisApp() {
     if (valLiveGLevel) valLiveGLevel.textContent = `${step.g_level.toFixed(3)}g`;
     if (badgeGLevel) {
       badgeGLevel.textContent = step.g_level < 0.02 ? "0.00g ZERO-G" : `${step.g_level.toFixed(2)}g MARS`;
-      badgeGLevel.style.color = step.g_level < 0.02 ? "#f43f5e" : "#38bdf8";
+      badgeGLevel.className = `badge ${step.g_level < 0.02 ? "badge-critical" : "badge-info"}`;
+      badgeGLevel.style.color = "";
     }
     const gPct = Math.min(100, Math.max(0, (step.g_level / (parseFloat(cfgInitialG?.value || "0.38") || 0.38)) * 100));
     if (barLiveGLevel) barLiveGLevel.style.width = `${gPct}%`;
     if (valHydrostaticCol) valHydrostaticCol.textContent = `${Math.round(gPct)}% Intact`;
 
     // Gauges: CVP
-    if (valLiveCvp) valLiveCvp.innerHTML = `${step.cvp_mmhg.toFixed(1)} <span style="font-size: 1rem; font-weight: 500;">mmHg</span>`;
+    if (valLiveCvp) valLiveCvp.innerHTML = `${step.cvp_mmhg.toFixed(1)} <small>mmHg</small>`;
     if (badgeCvp) {
       badgeCvp.textContent = step.cvp_mmhg > 10.0 ? "CRITICAL SPIKE" : (step.cvp_mmhg > 7.0 ? "ELEVATED" : "NOMINAL");
-      badgeCvp.style.color = step.cvp_mmhg > 10.0 ? "#f43f5e" : (step.cvp_mmhg > 7.0 ? "#f59e0b" : "#60a5fa");
+      badgeCvp.className = `badge ${step.cvp_mmhg > 10.0 ? "badge-critical" : (step.cvp_mmhg > 7.0 ? "badge-warning" : "badge-info")}`;
+      badgeCvp.style.color = "";
     }
     const cvpPct = Math.min(100, (step.cvp_mmhg / 14.0) * 100);
     if (barLiveCvp) barLiveCvp.style.width = `${cvpPct}%`;
     if (valLiveFluidVol) valLiveFluidVol.textContent = `+${Math.round(step.cephalad_volume_ml)} mL`;
 
     // Gauges: ICP
-    if (valLiveIcp) valLiveIcp.innerHTML = `${step.icp_mmhg.toFixed(1)} <span style="font-size: 1rem; font-weight: 500;">mmHg</span>`;
+    if (valLiveIcp) valLiveIcp.innerHTML = `${step.icp_mmhg.toFixed(1)} <small>mmHg</small>`;
     if (badgeIcp) {
       const isDanger = step.icp_mmhg >= 20.0;
       badgeIcp.textContent = isDanger ? "RETROBULBAR ALERT" : (step.icp_mmhg > 14.0 ? "ELEVATED" : "NORMAL");
-      badgeIcp.style.color = isDanger ? "#f43f5e" : (step.icp_mmhg > 14.0 ? "#f59e0b" : "#34d399");
+      badgeIcp.className = `badge ${isDanger ? "badge-critical" : (step.icp_mmhg > 14.0 ? "badge-warning" : "badge-low")}`;
+      badgeIcp.style.color = "";
     }
     const icpPct = Math.min(100, (step.icp_mmhg / 26.0) * 100);
     if (barLiveIcp) barLiveIcp.style.width = `${icpPct}%`;
 
     // Gauges: SMS
-    if (valLiveSms) valLiveSms.innerHTML = `${step.sms_index.toFixed(1)} <span style="font-size: 1rem; font-weight: 500;">/ 100</span>`;
+    if (valLiveSms) valLiveSms.innerHTML = `${step.sms_index.toFixed(1)} <small>/ 100</small>`;
     if (badgeSms) {
       badgeSms.textContent = step.sms_index > 75.0 ? "PROJECTILE EMESIS" : (step.sms_index > 40.0 ? "MODERATE NAUSEA" : "MILD");
-      badgeSms.style.color = step.sms_index > 75.0 ? "#f43f5e" : (step.sms_index > 40.0 ? "#f59e0b" : "#a855f7");
+      badgeSms.className = `badge ${step.sms_index > 75.0 ? "badge-critical" : (step.sms_index > 40.0 ? "badge-warning" : "badge-low")}`;
+      badgeSms.style.color = "";
     }
     if (barLiveSms) barLiveSms.style.width = `${Math.min(100, step.sms_index)}%`;
     if (valLiveMismatch) valLiveMismatch.textContent = `${step.vestibular_mismatch_deg.toFixed(1)}°`;
@@ -2239,7 +2365,7 @@ function initAegisApp() {
   function startCentrifugePlayback() {
     stopCentrifugePlayback();
     isCentrifugePlaying = true;
-    if (btnPlayCentrifuge) btnPlayCentrifuge.textContent = "⏸ Pause";
+    if (btnPlayCentrifuge) btnPlayCentrifuge.innerHTML = `${svgIcon("pause", "icon icon-sm")}<span>Pause</span>`;
 
     let currTime = 0;
     const dur = parseFloat(cfgDuration?.value || "90");
@@ -2252,7 +2378,10 @@ function initAegisApp() {
         currTime = dur;
         stopCentrifugePlayback();
       }
-      if (simScrubber) simScrubber.value = String(Math.round(currTime));
+      if (simScrubber) {
+        simScrubber.value = String(Math.round(currTime));
+        updateRangeFill(simScrubber);
+      }
       findAndApplyStep(currTime);
     }, interval);
   }
@@ -2263,7 +2392,7 @@ function initAegisApp() {
       clearInterval(centrifugePlaybackTimer);
       centrifugePlaybackTimer = null;
     }
-    if (btnPlayCentrifuge) btnPlayCentrifuge.textContent = "▶ Play";
+    if (btnPlayCentrifuge) btnPlayCentrifuge.innerHTML = `${svgIcon("play", "icon icon-sm")}<span>Play</span>`;
   }
 
   function findAndApplyStep(targetTime) {
@@ -2341,37 +2470,37 @@ function initAegisApp() {
   function renderCentrifugeCrew(roster) {
     if (!centrifugeCrewGrid) return;
     if (!roster || roster.length === 0) {
-      centrifugeCrewGrid.innerHTML = `<div style="grid-column: 1/-1; color: var(--text-muted);">No crew telemetry stream available.</div>`;
+      centrifugeCrewGrid.innerHTML = `<div style="grid-column: 1/-1; color: var(--text-3);">No crew telemetry stream available.</div>`;
       return;
     }
 
     centrifugeCrewGrid.innerHTML = roster.map(c => `
-      <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.85rem; border-top: 3px solid ${c.sms_score > 85 ? '#f43f5e' : (c.sms_score > 50 ? '#f59e0b' : '#10b981')};">
+      <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.85rem; border-top: 3px solid ${c.sms_score > 85 ? 'var(--critical)' : (c.sms_score > 50 ? 'var(--warning)' : 'var(--success)')};">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
           <div>
-            <div style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase;">${c.crew_id} &bull; ${c.role}</div>
-            <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">${c.name}</div>
+            <div style="font-size: 0.72rem; color: var(--text-3); font-weight: 600;">${c.crew_id} &bull; ${c.role}</div>
+            <div style="font-weight: 700; color: var(--text); font-size: 0.92rem;">${c.name}</div>
           </div>
-          <span class="badge" style="background: ${c.sms_score > 85 ? 'rgba(244,63,94,0.2)' : 'rgba(16,185,129,0.2)'}; color: ${c.sms_score > 85 ? '#f43f5e' : '#34d399'}; font-size: 0.7rem;">
+          <span class="badge ${c.sms_score > 85 ? 'badge-critical' : 'badge-low'}">
             ${c.sms_score > 85 ? 'CRITICAL' : 'MONITORED'}
           </span>
         </div>
         
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; font-size: 0.8rem; margin-bottom: 0.65rem;">
-          <div style="background: rgba(255,255,255,0.02); padding: 0.3rem 0.5rem; border-radius: 4px;">
-            <span style="color: var(--text-dim); font-size: 0.7rem;">HR / BP:</span>
-            <div style="font-family: var(--font-mono); font-weight: 600; color: #fff;">${c.heart_rate_bpm} bpm | ${c.blood_pressure_sys}/${c.blood_pressure_dia}</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; font-size: 0.78rem; margin-bottom: 0.65rem;">
+          <div style="background: var(--surface-muted); padding: 0.35rem 0.5rem; border-radius: var(--radius-xs); border: 1px solid var(--border);">
+            <span style="color: var(--text-3); font-size: 0.68rem;">HR / BP</span>
+            <div style="font-family: var(--font-mono); font-weight: 600; color: var(--text);">${c.heart_rate_bpm} bpm | ${c.blood_pressure_sys}/${c.blood_pressure_dia}</div>
           </div>
-          <div style="background: rgba(255,255,255,0.02); padding: 0.3rem 0.5rem; border-radius: 4px;">
-            <span style="color: var(--text-dim); font-size: 0.7rem;">CVP / ICP:</span>
-            <div style="font-family: var(--font-mono); font-weight: 600; color: #fff;">${c.cvp_mmhg} / ${c.icp_mmhg} mmHg</div>
+          <div style="background: var(--surface-muted); padding: 0.35rem 0.5rem; border-radius: var(--radius-xs); border: 1px solid var(--border);">
+            <span style="color: var(--text-3); font-size: 0.68rem;">CVP / ICP</span>
+            <div style="font-family: var(--font-mono); font-weight: 600; color: var(--text);">${c.cvp_mmhg} / ${c.icp_mmhg} mmHg</div>
           </div>
         </div>
 
-        <div style="font-size: 0.75rem; display: flex; flex-direction: column; gap: 0.25rem;">
-          <div><strong style="color: var(--text-dim);">SMS Status:</strong> <span style="color: ${c.sms_score > 80 ? '#fca5a5' : '#fff'};">${c.sms_status} (${c.sms_score})</span></div>
-          <div><strong style="color: var(--text-dim);">Restraint:</strong> <span style="color: ${c.restraint_status.includes('LOCKED') || c.restraint_status.includes('HARNESSED') ? '#34d399' : '#f87171'};">${c.restraint_status}</span></div>
-          <div><strong style="color: var(--text-dim);">Autoinjector:</strong> <span style="color: ${c.autoinjector_status.includes('DISPENSED') ? '#34d399' : '#60a5fa'}; font-family: var(--font-mono); font-size: 0.72rem;">${c.autoinjector_status}</span></div>
+        <div style="font-size: 0.75rem; display: flex; flex-direction: column; gap: 0.25rem; color: var(--text-2);">
+          <div><strong>SMS status:</strong> <span style="color: ${c.sms_score > 80 ? 'var(--critical)' : 'var(--text)'}; font-weight: 600;">${c.sms_status} (${c.sms_score})</span></div>
+          <div><strong>Restraint:</strong> <span style="color: ${c.restraint_status.includes('LOCKED') || c.restraint_status.includes('HARNESSED') ? 'var(--success)' : 'var(--critical)'}; font-weight: 600;">${c.restraint_status}</span></div>
+          <div><strong>Autoinjector:</strong> <span style="color: ${c.autoinjector_status.includes('DISPENSED') ? 'var(--success)' : 'var(--accent)'}; font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600;">${c.autoinjector_status}</span></div>
         </div>
       </div>
     `).join("");
@@ -2381,26 +2510,29 @@ function initAegisApp() {
   function renderCentrifugeDirectives(directives) {
     if (!centrifugeDirectivesContainer) return;
     if (!directives || directives.length === 0) {
-      centrifugeDirectivesContainer.innerHTML = `<p style="color: var(--text-muted);">No directives issued.</p>`;
+      centrifugeDirectivesContainer.innerHTML = `<p style="color: var(--text-3);">No directives issued.</p>`;
       return;
     }
 
-    centrifugeDirectivesContainer.innerHTML = directives.map(d => `
-      <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-left: 3px solid ${d.priority === 1 ? '#f43f5e' : (d.priority === 2 ? '#f59e0b' : '#3b82f6')}; border-radius: 6px; padding: 0.75rem 1rem; margin-bottom: 0.75rem;">
+    centrifugeDirectivesContainer.innerHTML = directives.map(d => {
+      const isActive = d.status === 'EXECUTED' || d.status === 'DISPENSED' || d.status?.includes('ACTIVE');
+      return `
+      <div style="background: var(--surface); border: 1px solid var(--border); border-left: 3px solid ${d.priority === 1 ? 'var(--critical)' : (d.priority === 2 ? 'var(--warning)' : 'var(--accent)')}; border-radius: var(--radius-sm); padding: 0.75rem 1rem; margin-bottom: 0.65rem;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
-          <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim);">PRIORITY ${d.priority} &bull; ${d.action_code}</span>
-          <span class="badge" style="font-size: 0.7rem; background: ${d.status === 'EXECUTED' || d.status === 'DISPENSED' || d.status?.includes('ACTIVE') ? 'rgba(16,185,129,0.2)' : 'rgba(244,63,94,0.2)'}; color: ${d.status === 'EXECUTED' || d.status === 'DISPENSED' || d.status?.includes('ACTIVE') ? '#34d399' : '#f87171'};">
+          <span style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-3); font-weight: 600;">Priority ${d.priority} &bull; ${d.action_code}</span>
+          <span class="badge ${isActive ? 'badge-low' : 'badge-critical'}">
             ${d.status || 'PENDING'}
           </span>
         </div>
-        <div style="font-weight: 700; color: #fff; font-size: 0.95rem; margin-bottom: 0.25rem;">${d.title}</div>
-        <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4; margin-bottom: 0.35rem;">${d.clinical_rationale}</div>
-        <div style="font-size: 0.75rem; color: var(--text-dim); display: flex; gap: 1rem;">
-          <span>Target: <strong style="color: #fff;">${d.execution_target}</strong></span>
-          <span>Max Latency: <strong style="color: #fff;">${d.latency_tolerance_sec}s</strong></span>
+        <div style="font-weight: 700; color: var(--text); font-size: 0.9rem; margin-bottom: 0.25rem;">${d.title}</div>
+        <div style="font-size: 0.82rem; color: var(--text-2); line-height: 1.45; margin-bottom: 0.35rem;">${d.clinical_rationale}</div>
+        <div style="font-size: 0.75rem; color: var(--text-3); display: flex; gap: 1rem;">
+          <span>Target: <strong style="color: var(--text);">${d.execution_target}</strong></span>
+          <span>Max latency: <strong style="color: var(--text);">${d.latency_tolerance_sec}s</strong></span>
         </div>
       </div>
-    `).join("");
+    `;
+    }).join("");
   }
 
   // Interventions
@@ -2411,34 +2543,31 @@ function initAegisApp() {
     const hull = interventions.mechanical_and_hull_safing || {};
 
     centrifugeInterventionsContainer.innerHTML = `
-      <div style="display: flex; flex-direction: column; gap: 0.85rem;">
-        <!-- ECLSS Signals -->
-        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 6px; padding: 0.75rem 1rem;">
-          <div style="font-size: 0.75rem; color: var(--accent-cyan); font-weight: 700; text-transform: uppercase; margin-bottom: 0.35rem;">ECLSS Environmental Controls</div>
-          <div style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5;">
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.75rem 1rem;">
+          <div style="font-size: 0.75rem; color: var(--accent); font-weight: 700; margin-bottom: 0.35rem;">ECLSS environmental controls</div>
+          <div style="font-size: 0.8rem; color: var(--text-2); line-height: 1.5;">
             <div>&bull; <strong>Lighting:</strong> ${eclss.cabin_lighting_state || 'Nominal 4000K'}</div>
             <div>&bull; <strong>Ventilation:</strong> ${eclss.ventilation_velocity_mps || '0.20'} m/s (${eclss.cabin_airflow_vector || 'Nominal'})</div>
             <div>&bull; <strong>Suction:</strong> ${eclss.suction_canisters_power || 'STANDBY'}</div>
           </div>
         </div>
 
-        <!-- Medical Dispenser Signals -->
-        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 6px; padding: 0.75rem 1rem;">
-          <div style="font-size: 0.75rem; color: #a855f7; font-weight: 700; text-transform: uppercase; margin-bottom: 0.35rem;">Medical Dispenser Signals (${med.station_id || 'STATION-01'})</div>
-          <div style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5;">
+        <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.75rem 1rem;">
+          <div style="font-size: 0.75rem; color: var(--text); font-weight: 700; margin-bottom: 0.35rem;">Medical dispenser signals (${med.station_id || 'STATION-01'})</div>
+          <div style="font-size: 0.8rem; color: var(--text-2); line-height: 1.5;">
             ${(med.dispense_order || []).map(o => `
-              <div>&bull; <strong>${o.compound} (${o.dose}):</strong> ${o.delivery_system} &rarr; <span style="font-family: var(--font-mono); color: #67e8f9;">[${o.status}]</span></div>
+              <div>&bull; <strong>${o.compound} (${o.dose}):</strong> ${o.delivery_system} &rarr; <span style="font-family: var(--font-mono); color: var(--accent); font-weight: 600;">[${o.status}]</span></div>
             `).join("")}
           </div>
         </div>
 
-        <!-- Mechanical / Hull Safing -->
-        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 6px; padding: 0.75rem 1rem;">
-          <div style="font-size: 0.75rem; color: #f59e0b; font-weight: 700; text-transform: uppercase; margin-bottom: 0.35rem;">Mechanical &amp; Hull Safing Actuators</div>
-          <div style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5;">
-            <div>&bull; <strong>Bulkhead Nets:</strong> ${hull.bulkhead_pneumatic_arrestor_nets || 'STANDBY'}</div>
-            <div>&bull; <strong>Electromagnetic Floor Lock:</strong> <span style="color: ${hull.electromagnetic_floor_deck_lock?.includes('100') ? '#34d399' : '#f87171'}; font-weight: 600;">${hull.electromagnetic_floor_deck_lock || 'DISENGAGED'}</span></div>
-            <div>&bull; <strong>Damper Override:</strong> ${hull.spin_down_damper_torque_override || 'STANDBY'}</div>
+        <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.75rem 1rem;">
+          <div style="font-size: 0.75rem; color: var(--warning); font-weight: 700; margin-bottom: 0.35rem;">Mechanical &amp; hull safing actuators</div>
+          <div style="font-size: 0.8rem; color: var(--text-2); line-height: 1.5;">
+            <div>&bull; <strong>Bulkhead nets:</strong> ${hull.bulkhead_pneumatic_arrestor_nets || 'STANDBY'}</div>
+            <div>&bull; <strong>Electromagnetic floor lock:</strong> <span style="color: ${hull.electromagnetic_floor_deck_lock?.includes('100') ? 'var(--success)' : 'var(--critical)'}; font-weight: 600;">${hull.electromagnetic_floor_deck_lock || 'DISENGAGED'}</span></div>
+            <div>&bull; <strong>Damper override:</strong> ${hull.spin_down_damper_torque_override || 'STANDBY'}</div>
           </div>
         </div>
       </div>
@@ -2544,7 +2673,7 @@ function initAegisApp() {
     if (elRisk) {
       const score = (d.risk_score ?? d.composite_risk_score ?? 0).toFixed(2);
       const level = d.risk_level ?? d.overall_risk_level ?? "NOMINAL";
-      const color = level === 'CRITICAL' ? '#f87171' : (level === 'ELEVATED' || level === 'HIGH') ? '#f59e0b' : '#34d399';
+      const color = level === 'CRITICAL' ? 'var(--critical)' : (level === 'ELEVATED' || level === 'HIGH' || level === 'MEDIUM') ? 'var(--warning)' : 'var(--success)';
       elRisk.innerHTML = `<span style="color: ${color}; font-weight: 700;">${score} / 1.00 [${level}]</span>`;
     }
 
@@ -2593,9 +2722,9 @@ function initAegisApp() {
       const msgDiv = document.createElement("div");
       msgDiv.className = "copilot-msg user-msg";
       msgDiv.innerHTML = `
-        <div class="msg-avatar">👤</div>
+        <div class="msg-avatar">FO</div>
         <div class="msg-bubble">
-          <div class="msg-author">Officer <span class="msg-time">${timeStr}</span></div>
+          <div class="msg-author">Flight Officer <span class="msg-time">${timeStr}</span></div>
           <div class="msg-content">${safeText}</div>
         </div>
       `;
@@ -2613,7 +2742,7 @@ function initAegisApp() {
       const typingDiv = document.createElement("div");
       typingDiv.className = "copilot-msg bot-msg copilot-typing-wrapper";
       typingDiv.innerHTML = `
-        <div class="msg-avatar">🩺</div>
+        <div class="msg-avatar">${svgIcon("stethoscope", "icon icon-sm")}</div>
         <div class="msg-bubble">
           <div class="copilot-typing">
             <span class="typing-dot"></span>
@@ -2642,7 +2771,7 @@ function initAegisApp() {
     if (data.citations && data.citations.length > 0) {
       citationsHtml = `
         <div class="msg-meta">
-          ${data.citations.map(c => `<span class="msg-citation-pill">📚 ${c}</span>`).join("")}
+          ${data.citations.map(c => `<span class="msg-citation-pill">${svgIcon("book", "icon icon-xs")} ${c}</span>`).join("")}
         </div>
       `;
     }
@@ -2651,12 +2780,12 @@ function initAegisApp() {
     if (data.action_triggered) {
       const act = data.action_triggered;
       let label = act.action || "Executed";
-      if (act.action === "set_scenario") label = `Scenario Activated: ${act.scenario_id}`;
-      else if (act.action === "toggle_blackout") label = `Blackout Status: ${act.new_state ? "ON" : "OFF"}`;
-      else if (act.action === "actuate_centrifuge") label = `Centrifuge Interventions Deployed`;
+      if (act.action === "set_scenario") label = `Scenario activated: ${act.scenario_id}`;
+      else if (act.action === "toggle_blackout") label = `Blackout status: ${act.new_state ? "ON" : "OFF"}`;
+      else if (act.action === "actuate_centrifuge") label = `Centrifuge interventions deployed`;
       actionHtml = `
         <div style="margin-top: 0.4rem;">
-          <span class="msg-action-badge">⚡ ${label}</span>
+          <span class="msg-action-badge">${svgIcon("bolt", "icon icon-xs")} ${label}</span>
         </div>
       `;
     }
@@ -2666,7 +2795,7 @@ function initAegisApp() {
       const msgDiv = document.createElement("div");
       msgDiv.className = "copilot-msg bot-msg";
       msgDiv.innerHTML = `
-        <div class="msg-avatar">🩺</div>
+        <div class="msg-avatar">${svgIcon("stethoscope", "icon icon-sm")}</div>
         <div class="msg-bubble">
           <div class="msg-author">Aegis Flight Surgeon <span class="msg-time">${timeStr}</span></div>
           <div class="msg-content">${formattedReply}</div>
@@ -2720,11 +2849,11 @@ function initAegisApp() {
       removeCopilotTyping();
       
       // Synthesize client-side offline flight surgeon response using loaded habitat telemetry
-      const riskScore = currentDecision ? currentDecision.risk_score.toFixed(2) : "0.10";
-      const riskLvl = currentDecision ? currentDecision.risk_level : "LOW";
-      const rec = currentDecision ? currentDecision.recommended_action : "Maintain routine passive flight monitoring cycle.";
-      const radDose = currentState && currentState.radiation ? `${currentState.radiation.dose_rate_msv_h.toFixed(2)} mSv/h` : "0.02 mSv/h";
-      const voiceFatigue = currentState && currentState.voice_vitals ? currentState.voice_vitals.fatigue_score.toFixed(2) : "0.10";
+      const riskScore = lastKnownDecision ? lastKnownDecision.risk_score.toFixed(2) : "0.10";
+      const riskLvl = lastKnownDecision ? lastKnownDecision.risk_level : "LOW";
+      const rec = lastKnownDecision ? lastKnownDecision.recommended_action : "Maintain routine passive flight monitoring cycle.";
+      const radDose = lastKnownState && lastKnownState.radiation ? `${lastKnownState.radiation.dose_rate_msv_h.toFixed(2)} mSv/h` : "0.02 mSv/h";
+      const voiceFatigue = lastKnownState && lastKnownState.voice_vitals ? lastKnownState.voice_vitals.fatigue_score.toFixed(2) : "0.10";
 
       const fallbackData = {
         reply: `**Autonomous AI Flight Surgeon (Edge Offline Telemetry Mode):**\n\n` +
@@ -2752,7 +2881,7 @@ function initAegisApp() {
   function resetCopilotMessages() {
     const welcomeHtml = `
       <div class="copilot-msg bot-msg">
-        <div class="msg-avatar">🩺</div>
+        <div class="msg-avatar">${svgIcon("stethoscope", "icon icon-sm")}</div>
         <div class="msg-bubble">
           <div class="msg-author">Aegis Flight Surgeon <span class="msg-time">Reset</span></div>
           <div class="msg-content">Session cleared. Ready for flight telemetry queries or clinical directives.</div>
@@ -3118,40 +3247,40 @@ function initAegisApp() {
 
     if (headerBadge && headerDot && headerText) {
       if (isSyncing) {
-        headerBadge.style.background = "rgba(56, 189, 248, 0.15)";
-        headerBadge.style.borderColor = "rgba(56, 189, 248, 0.4)";
+        headerBadge.className = "status-indicator";
         headerDot.className = "status-dot";
-        headerDot.style.background = "#38bdf8";
-        headerText.textContent = "SYNCING [BURST DOWNLINK ACTIVE]";
-        headerText.style.color = "#38bdf8";
+        headerDot.style.background = "var(--accent)";
+        headerText.textContent = "Syncing (burst downlink active)";
+        headerText.style.color = "var(--accent)";
       } else if (isOnline) {
-        headerBadge.style.background = "rgba(16, 185, 129, 0.12)";
-        headerBadge.style.borderColor = "rgba(16, 185, 129, 0.35)";
+        headerBadge.className = "status-indicator";
         headerDot.className = "status-dot online";
-        headerDot.style.background = "#10b981";
-        headerText.textContent = "ONLINE [EARTH LINK ACTIVE]";
-        headerText.style.color = "#10b981";
+        headerDot.style.background = "";
+        headerText.textContent = "Online (Earth link active)";
+        headerText.style.color = "";
       } else {
-        headerBadge.style.background = "rgba(245, 158, 11, 0.15)";
-        headerBadge.style.borderColor = "rgba(245, 158, 11, 0.4)";
+        headerBadge.className = "status-indicator offline";
         headerDot.className = "status-dot offline";
-        headerDot.style.background = "#f59e0b";
-        headerText.textContent = "OFFLINE [20-MIN BLACKOUT]";
-        headerText.style.color = "#fbbf24";
+        headerDot.style.background = "";
+        headerText.textContent = "Offline (20-min blackout)";
+        headerText.style.color = "";
       }
+      headerBadge.style.background = "";
+      headerBadge.style.borderColor = "";
     }
 
     if (sidebarBadge) {
       sidebarBadge.textContent = status.comms_state;
-      sidebarBadge.style.background = isOnline ? "rgba(16, 185, 129, 0.2)" : (isSyncing ? "rgba(56, 189, 248, 0.2)" : "rgba(245, 158, 11, 0.2)");
-      sidebarBadge.style.color = isOnline ? "#10b981" : (isSyncing ? "#38bdf8" : "#fbbf24");
+      sidebarBadge.className = `badge ${isOnline ? "badge-low" : (isSyncing ? "badge-info" : "badge-warning")}`;
+      sidebarBadge.style.background = "";
+      sidebarBadge.style.color = "";
     }
 
     if (quickToggleBtn) {
-      quickToggleBtn.textContent = isOnline ? "⚡ Disconnect Link" : "⚡ Restore Link";
+      quickToggleBtn.innerHTML = `${svgIcon(isOnline ? "wifi-off" : "wifi", "icon icon-sm")}<span>${isOnline ? "Disconnect link" : "Restore link"}</span>`;
     }
     if (actionToggleBtn) {
-      actionToggleBtn.textContent = isOnline ? "⚡ Disconnect Link (Simulate Blackout)" : "⚡ Restore Earth Link (Trigger Downlink)";
+      actionToggleBtn.innerHTML = `${svgIcon(isOnline ? "wifi-off" : "wifi", "icon icon-sm")}<span>${isOnline ? "Disconnect link (Simulate blackout)" : "Restore Earth link (Trigger downlink)"}</span>`;
     }
 
     // Critical Unsynced Banner
@@ -3178,7 +3307,7 @@ function initAegisApp() {
 
     if (elCardLinkState) {
       elCardLinkState.textContent = status.comms_state;
-      elCardLinkState.style.color = isOnline ? "#10b981" : (isSyncing ? "#38bdf8" : "#fbbf24");
+      elCardLinkState.style.color = isOnline ? "var(--success)" : (isSyncing ? "var(--accent)" : "var(--warning)");
     }
     if (elCardPendingEvents) elCardPendingEvents.textContent = status.pending_health_events;
     if (elCardPendingSummaries) elCardPendingSummaries.textContent = status.pending_telemetry_summaries;
@@ -3188,12 +3317,12 @@ function initAegisApp() {
 
     if (elCardCriticalPill && elCardNominalPill) {
       if (status.unsynchronized_critical_count > 0) {
-        elCardCriticalPill.style.display = "inline";
+        elCardCriticalPill.style.display = "inline-flex";
         elCardCriticalPill.textContent = `${status.unsynchronized_critical_count} CRITICAL`;
         elCardNominalPill.style.display = "none";
       } else {
         elCardCriticalPill.style.display = "none";
-        elCardNominalPill.style.display = "inline";
+        elCardNominalPill.style.display = "inline-flex";
       }
     }
 
@@ -3233,59 +3362,46 @@ function initAegisApp() {
     });
 
     if (all.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-dim);">No events registered in persistent queue. Click <strong>1-Click E2E Mission Demo</strong> to run simulation.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="8" class="empty-state">No events registered in persistent queue. Click <strong>Run 12-step mission demo</strong> to execute simulation.</td></tr>`;
       return;
     }
 
     all.sort((a, b) => new Date(b.occurrence_utc) - new Date(a.occurrence_utc));
 
     tbody.innerHTML = all.map(ev => {
-      let sevBg = "rgba(100, 116, 139, 0.2)";
-      let sevCol = "#94a3b8";
-      if (ev.severity === "CRITICAL") {
-        sevBg = "rgba(239, 68, 68, 0.2)";
-        sevCol = "#f87171";
-      } else if (ev.severity === "HIGH") {
-        sevBg = "rgba(245, 158, 11, 0.2)";
-        sevCol = "#fbbf24";
-      } else if (ev.severity === "MEDIUM") {
-        sevBg = "rgba(59, 130, 246, 0.2)";
-        sevCol = "#60a5fa";
-      }
-
-      let latencyStr = "Buffered Offline";
+      let latencyStr = "Buffered offline";
       if (ev.ground_received_utc) {
         const diffMs = Math.max(0, new Date(ev.ground_received_utc) - new Date(ev.occurrence_utc));
         const diffSec = Math.round(diffMs / 1000);
         if (diffSec < 60) {
-          latencyStr = `+${diffSec}s [Live Link]`;
+          latencyStr = `+${diffSec}s (Live link)`;
         } else {
           const m = Math.floor(diffSec / 60);
           const s = diffSec % 60;
-          latencyStr = `+${m}m ${s}s [Delayed Downlink]`;
+          latencyStr = `+${m}m ${s}s (Delayed downlink)`;
         }
       }
 
       const occurFormatted = ev.occurrence_utc ? new Date(ev.occurrence_utc).toISOString().replace("T", " ").substring(11, 19) + " UTC" : "--";
-      const recvFormatted = ev.ground_received_utc ? new Date(ev.ground_received_utc).toISOString().replace("T", " ").substring(11, 19) + " UTC" : "<span style='color:#f59e0b;'>In Transit</span>";
+      const recvFormatted = ev.ground_received_utc ? new Date(ev.ground_received_utc).toISOString().replace("T", " ").substring(11, 19) + " UTC" : "<span style='color:var(--warning); font-weight:600;'>In transit</span>";
 
       const statusBadge = ev.status === "SYNCED" 
-        ? `<span style="background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 700; font-size: 0.68rem;">SYNCED</span>`
-        : `<span style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 700; font-size: 0.68rem;">PENDING</span>`;
+        ? `<span class="badge badge-low">SYNCED</span>`
+        : `<span class="badge badge-warning">PENDING</span>`;
 
       return `
-        <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.06);">
-          <td style="padding: 0.55rem 0.6rem; font-family: var(--font-mono); font-size: 0.72rem; color: #38bdf8;">${ev.event_id}</td>
-          <td style="padding: 0.55rem 0.6rem;">
-            <span style="background: ${sevBg}; color: ${sevCol}; padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 700; font-size: 0.68rem;">${ev.severity}</span>
+        <tr>
+          <td style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent); font-weight: 600;">${ev.event_id}</td>
+          <td>
+            <span class="badge ${getBadgeClass(ev.severity)}">${ev.severity}</span>
           </td>
-          <td style="padding: 0.55rem 0.6rem; color: #cbd5e1; max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${ev.source_pillar || ''}">${ev.source_pillar || 'Multi-Signal'}</td>
-          <td style="padding: 0.55rem 0.6rem; font-family: var(--font-mono); font-size: 0.72rem; color: #94a3b8;">${occurFormatted}</td>
-          <td style="padding: 0.55rem 0.6rem; font-family: var(--font-mono); font-size: 0.72rem;">${recvFormatted}</td>
-          <td style="padding: 0.55rem 0.6rem; font-size: 0.7rem; color: ${ev.ground_received_utc ? '#38bdf8' : '#f59e0b'}; font-weight: 600;">${latencyStr}</td>
-          <td style="padding: 0.55rem 0.6rem;">${statusBadge}</td>
-          <td style="padding: 0.55rem 0.6rem;">
-            <button class="btn btn-xs btn-outline" style="font-size: 0.68rem; padding: 0.15rem 0.45rem; border-color: rgba(245, 158, 11, 0.4); color: #fbbf24; cursor: pointer;" onclick="window.inspectEventShap('${ev.event_id}')">🔬 Explain</button>
+          <td style="color: var(--text); max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${ev.source_pillar || ''}">${ev.source_pillar || 'Multi-Signal'}</td>
+          <td style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-2);">${occurFormatted}</td>
+          <td style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-2);">${recvFormatted}</td>
+          <td style="font-size: 0.75rem; color: ${ev.ground_received_utc ? 'var(--accent)' : 'var(--warning)'}; font-weight: 600;">${latencyStr}</td>
+          <td>${statusBadge}</td>
+          <td>
+            <button class="btn btn-xs btn-secondary" onclick="window.inspectEventShap('${ev.event_id}')">${svgIcon("microscope", "icon icon-xs")}<span>Explain</span></button>
           </td>
         </tr>
       `;
@@ -3337,22 +3453,22 @@ function initAegisApp() {
     const container = document.getElementById("syncActivityLogContainer");
     if (!container) return;
     if (!logs || logs.length === 0) {
-      container.innerHTML = `<div style="color: var(--text-dim); text-align: center; padding: 1rem;">No recent sync activity logged.</div>`;
+      container.innerHTML = `<div style="color: var(--text-3); text-align: center; padding: 1rem;">No recent sync activity logged.</div>`;
       return;
     }
 
     container.innerHTML = logs.map(l => {
-      let col = "#94a3b8";
-      if (l.status === "SUCCESS") col = "#34d399";
-      else if (l.status === "WARNING") col = "#fbbf24";
-      else if (l.status === "ERROR") col = "#f87171";
+      let col = "var(--text-2)";
+      if (l.status === "SUCCESS") col = "var(--success)";
+      else if (l.status === "WARNING") col = "var(--warning)";
+      else if (l.status === "ERROR") col = "var(--critical)";
 
       const timeStr = l.timestamp_utc ? new Date(l.timestamp_utc).toLocaleTimeString() : "";
       return `
         <div style="margin-bottom: 0.35rem; display: flex; gap: 0.5rem;">
-          <span style="color: var(--text-dim); min-width: 65px;">[${timeStr}]</span>
+          <span style="color: var(--text-3); min-width: 72px;">[${timeStr}]</span>
           <span style="color: ${col}; font-weight: 700; min-width: 130px;">${l.action}:</span>
-          <span style="color: #cbd5e1;">${l.details}</span>
+          <span style="color: var(--text);">${l.details}</span>
         </div>
       `;
     }).join("");
@@ -3371,10 +3487,10 @@ function initAegisApp() {
   window.triggerStoreForwardSync = async function() {
     try {
       const btn = document.getElementById("syncForceUploadBtn");
-      if (btn) btn.textContent = "⏳ Transmitting DSN Burst...";
+      if (btn) btn.innerHTML = `${svgIcon("clock", "icon icon-sm")}<span>Transmitting DSN burst...</span>`;
       await fetch("/api/sync/trigger", { method: "POST" });
       await fetchSyncStatusAndTimeline();
-      if (btn) btn.textContent = "📤 Flush Pending Queue to Houston";
+      if (btn) btn.innerHTML = `${svgIcon("upload", "icon icon-sm")}<span>Flush pending queue to Houston</span>`;
     } catch (err) {
       console.error("Error triggering sync:", err);
     }
@@ -3383,14 +3499,14 @@ function initAegisApp() {
   window.triggerLocalEdgeTraining = async function() {
     try {
       const btn = document.getElementById("syncTrainEdgeBtn");
-      if (btn) btn.textContent = "⏳ Computing Edge Gradients...";
+      if (btn) btn.innerHTML = `${svgIcon("clock", "icon icon-sm")}<span>Computing edge gradients...</span>`;
       await fetch("/api/sync/federated/train", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ client_target: "both", num_samples_client1: 45, num_samples_client2: 38 })
       });
       await fetchSyncStatusAndTimeline();
-      if (btn) btn.textContent = "🧪 Train Onboard Edge Models (Watney & Vogel)";
+      if (btn) btn.innerHTML = `${svgIcon("cpu", "icon icon-sm")}<span>Train onboard edge models (Watney &amp; Vogel)</span>`;
     } catch (err) {
       console.error("Error training edge models:", err);
     }
@@ -3398,7 +3514,7 @@ function initAegisApp() {
 
   window.simulateTransientDrop = async function() {
     const btn = document.getElementById("syncSimulateDropBtn");
-    if (btn) btn.textContent = "⏳ Inducing Carrier Drop...";
+    if (btn) btn.innerHTML = `${svgIcon("clock", "icon icon-sm")}<span>Inducing carrier drop...</span>`;
 
     // 1. Immediately update the dashboard's Earth Link Status to OFFLINE without waiting
     renderSyncStatus({
@@ -3413,8 +3529,8 @@ function initAegisApp() {
 
     const notice = document.getElementById("syncHeaderStatusText");
     if (notice) {
-      notice.textContent = "OFFLINE [DSN LINK LOST - ONBOARD MONITORING ACTIVE]";
-      notice.style.color = "#fbbf24";
+      notice.textContent = "Offline (DSN link lost · onboard monitoring active)";
+      notice.style.color = "var(--warning)";
     }
 
     try {
@@ -3425,7 +3541,7 @@ function initAegisApp() {
     } catch (err) {
       console.error("Error inducing DSN drop:", err);
     } finally {
-      if (btn) btn.textContent = "💥 Simulate DSN Drop (Retry Backoff)";
+      if (btn) btn.innerHTML = `${svgIcon("alert-triangle", "icon icon-sm")}<span>Simulate DSN drop (Retry backoff)</span>`;
     }
   };
 
@@ -3435,7 +3551,7 @@ function initAegisApp() {
     const btn = document.getElementById("syncRunDemoBtn");
     if (card) card.style.display = "block";
     if (container) {
-      container.innerHTML = `<div style="color: #38bdf8;">⏳ Executing 12-Step Interplanetary Health Mission Scenario...</div>`;
+      container.innerHTML = `<div style="color: var(--accent); font-weight: 600;">Executing 12-step interplanetary health mission scenario...</div>`;
     }
     if (btn) btn.disabled = true;
 
@@ -3445,21 +3561,21 @@ function initAegisApp() {
 
       if (container) {
         container.innerHTML = `
-          <div style="color: #34d399; font-weight: 700; margin-bottom: 0.4rem;">✓ DEMONSTRATION WORKFLOW EXECUTED SUCCESSFULLY</div>
-          <div style="color: #cbd5e1;">• Step 1-3: Nominal Baseline established under ONLINE link.</div>
-          <div style="color: #f59e0b;">• Step 4: Disconnected link &bull; 20-min Mars Communication Blackout initiated.</div>
-          <div style="color: #f87171;">• Step 5-6: Offline Health Events registered (Critical SPE storm + Acoustic Hypoxia marker).</div>
-          <div style="color: #c084fc;">• Step 7: Onboard Federated Models trained locally by CDR Watney & Dr. Vogel (${data.offline_queued_models} updates queued).</div>
-          <div style="color: #e2e8f0;">• Step 8: Earth link restored via Mars Relay Orbiter &bull; Auto-Sync triggered.</div>
-          <div style="color: #38bdf8;">• Step 9: Houston Ground Control received ${data.ground_events_count} events with verifiable SHA-256 telemetry checksums.</div>
-          <div style="color: #34d399;">• Step 10: Retried sync idempotency verified (0 duplicates generated; duplicate check passed).</div>
-          <div style="color: #38bdf8;">• Step 11: Ground FedAvg aggregation completed &bull; Global Model version promoted to <strong style="color:#34d399;">${data.latest_global_model ? data.latest_global_model.version : 'v1.1.0'}</strong>.</div>
+          <div style="color: var(--success); font-weight: 700; margin-bottom: 0.4rem;">Demonstration workflow executed successfully</div>
+          <div style="color: var(--text);">• Step 1–3: Nominal baseline established under ONLINE link.</div>
+          <div style="color: var(--warning);">• Step 4: Disconnected link &bull; 20-min Mars communication blackout initiated.</div>
+          <div style="color: var(--critical);">• Step 5–6: Offline health events registered (Critical SPE storm + acoustic hypoxia marker).</div>
+          <div style="color: var(--accent);">• Step 7: Onboard federated models trained locally by CDR Watney &amp; Dr. Vogel (${data.offline_queued_models} updates queued).</div>
+          <div style="color: var(--text);">• Step 8: Earth link restored via Mars Relay Orbiter &bull; auto-sync triggered.</div>
+          <div style="color: var(--accent);">• Step 9: Houston Ground Control received ${data.ground_events_count} events with verifiable SHA-256 telemetry checksums.</div>
+          <div style="color: var(--success);">• Step 10: Retried sync idempotency verified (0 duplicates generated; duplicate check passed).</div>
+          <div style="color: var(--text);">• Step 11: Ground FedAvg aggregation completed &bull; global model version promoted to <strong style="color:var(--success);">${data.latest_global_model ? data.latest_global_model.version : 'v1.1.0'}</strong>.</div>
         `;
       }
       await fetchSyncStatusAndTimeline();
       fetchInitialState();
     } catch (err) {
-      if (container) container.innerHTML = `<div style="color: #f87171;">Error executing demo: ${err.message}</div>`;
+      if (container) container.innerHTML = `<div style="color: var(--critical);">Error executing demo: ${err.message}</div>`;
     } finally {
       if (btn) btn.disabled = false;
     }
@@ -3498,19 +3614,9 @@ function initAegisApp() {
     if (idBadge) idBadge.textContent = `ALERT: ${data.alert_id || "CURRENT"}`;
     if (sevBadge) {
       sevBadge.textContent = `${data.severity_category || "UNKNOWN"} ANOMALY`;
-      if (data.severity_category === "CRITICAL") {
-        sevBadge.style.background = "rgba(239, 68, 68, 0.2)";
-        sevBadge.style.color = "#f87171";
-      } else if (data.severity_category === "HIGH") {
-        sevBadge.style.background = "rgba(245, 158, 11, 0.2)";
-        sevBadge.style.color = "#fbbf24";
-      } else if (data.severity_category === "MEDIUM") {
-        sevBadge.style.background = "rgba(59, 130, 246, 0.2)";
-        sevBadge.style.color = "#60a5fa";
-      } else {
-        sevBadge.style.background = "rgba(16, 185, 129, 0.2)";
-        sevBadge.style.color = "#34d399";
-      }
+      sevBadge.className = `badge ${getBadgeClass(data.severity_category)}`;
+      sevBadge.style.background = "";
+      sevBadge.style.color = "";
     }
 
     if (modelBadge) modelBadge.textContent = `Model: ${data.model_name || "Multimodal Anomaly"} ${data.model_version || "v1.0.0"}`;
@@ -3520,8 +3626,9 @@ function initAegisApp() {
     }
     if (statusPill) {
       statusPill.textContent = data.status || "AVAILABLE";
-      statusPill.style.color = data.status === "EXPLANATION_UNAVAILABLE" ? "#f87171" : "#34d399";
-      statusPill.style.background = data.status === "EXPLANATION_UNAVAILABLE" ? "rgba(239, 68, 68, 0.15)" : "rgba(16, 185, 129, 0.15)";
+      statusPill.className = `badge ${data.status === "EXPLANATION_UNAVAILABLE" ? "badge-critical" : "badge-low"}`;
+      statusPill.style.color = "";
+      statusPill.style.background = "";
     }
 
     // Metric numbers
@@ -3550,59 +3657,48 @@ function initAegisApp() {
       const maxAttribution = Math.max(0.2, ...data.contributions.map(c => Math.abs(c.attribution)));
 
       chartContainer.innerHTML = `
-        <div style="display: grid; grid-template-columns: 200px 1fr 110px; gap: 0.75rem; padding-bottom: 0.5rem; margin-bottom: 0.6rem; border-bottom: 1px solid rgba(255, 255, 255, 0.08); font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">
-          <div>Feature (Observed Value)</div>
-          <div style="text-align: center; position: relative;">
-            <span>Negative / Mitigates &larr;</span>
-            <span style="display: inline-block; width: 1px; height: 10px; background: rgba(255, 255, 255, 0.3); vertical-align: middle; margin: 0 0.5rem;"></span>
-            <span>&rarr; Positive / Escalates</span>
+        <div class="xai-wf-header">
+          <div>Feature (observed value)</div>
+          <div style="text-align: center;">
+            <span>Mitigates (&larr;)</span>
+            <span style="display: inline-block; width: 1px; height: 10px; background: var(--border-strong); vertical-align: middle; margin: 0 0.5rem;"></span>
+            <span>(&rarr;) Escalates</span>
           </div>
-          <div style="text-align: right;">Model Attribution</div>
+          <div style="text-align: right;">Attribution</div>
         </div>
       ` + data.contributions.map(c => {
         const isPos = c.attribution >= 0;
         const widthPct = Math.min(100, Math.round((Math.abs(c.attribution) / maxAttribution) * 100));
-        const barColor = isPos ? "linear-gradient(90deg, #f59e0b, #ef4444)" : "linear-gradient(270deg, #10b981, #06b6d4)";
+        const barColor = isPos ? "#B42318" : "#18734A";
         const signStr = isPos ? `+${c.attribution.toFixed(3)}` : c.attribution.toFixed(3);
-        const badgeCol = isPos ? "#f87171" : "#34d399";
-        const badgeBg = isPos ? "rgba(239, 68, 68, 0.15)" : "rgba(16, 185, 129, 0.15)";
-        const dirLabel = isPos ? "Escalates Risk" : (c.attribution < -0.001 ? "Mitigates Risk" : "Nominal");
+        const badgeCls = isPos ? "badge-critical" : "badge-low";
+        const dirLabel = isPos ? "Escalates risk" : (c.attribution < -0.001 ? "Mitigates risk" : "Nominal");
 
         return `
-          <div style="display: grid; grid-template-columns: 200px 1fr 110px; gap: 0.75rem; align-items: center; margin-bottom: 0.55rem; font-size: 0.75rem;">
-            <!-- Feature name & value -->
+          <div class="xai-wf-row">
             <div>
-              <div style="font-weight: 700; color: #f1f5f9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${c.feature_label}">
+              <div class="xai-wf-label" title="${c.feature_label}">
                 #${c.rank} ${c.feature_label}
               </div>
-              <div style="font-size: 0.68rem; color: var(--text-muted); font-family: var(--font-mono);">
-                Observed: <strong style="color: #cbd5e1;">${c.feature_value}</strong> ${c.unit}
+              <div class="xai-wf-obs">
+                Observed: <strong>${c.feature_value}</strong> ${c.unit}
               </div>
             </div>
 
-            <!-- Visual Bidirectional Center Bar -->
-            <div style="background: rgba(255, 255, 255, 0.04); height: 22px; border-radius: 4px; position: relative; display: flex; align-items: center; border: 1px solid rgba(255, 255, 255, 0.05); overflow: hidden;">
-              <!-- Center Axis Marker (50%) -->
-              <div style="position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: rgba(255, 255, 255, 0.25); z-index: 2;"></div>
-
+            <div class="xai-wf-track">
+              <div class="xai-wf-axis"></div>
               ${isPos ? `
-                <!-- Positive Bar (grows right from 50%) -->
-                <div style="position: absolute; left: 50%; width: ${widthPct / 2}%; height: 100%; background: ${barColor}; border-radius: 0 3px 3px 0; z-index: 1;"></div>
+                <div style="position: absolute; left: 50%; width: ${widthPct / 2}%; height: 100%; background: ${barColor}; border-radius: 0 3px 3px 0; z-index: 1; opacity: 0.85;"></div>
               ` : `
-                <!-- Negative Bar (grows left towards 50%) -->
-                <div style="position: absolute; right: 50%; width: ${widthPct / 2}%; height: 100%; background: ${barColor}; border-radius: 3px 0 0 3px; z-index: 1;"></div>
+                <div style="position: absolute; right: 50%; width: ${widthPct / 2}%; height: 100%; background: ${barColor}; border-radius: 3px 0 0 3px; z-index: 1; opacity: 0.85;"></div>
               `}
-              <span style="position: absolute; ${isPos ? 'left: calc(50% + 8px)' : 'right: calc(50% + 8px)'}; font-size: 0.65rem; font-family: var(--font-mono); font-weight: 700; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.8); z-index: 3;">
-                ${signStr}
-              </span>
             </div>
 
-            <!-- Numerical Attribution Badge -->
-            <div style="text-align: right;">
-              <span style="background: ${badgeBg}; color: ${badgeCol}; font-family: var(--font-mono); font-weight: 800; font-size: 0.72rem; padding: 0.15rem 0.45rem; border-radius: 4px; display: inline-block;">
+            <div class="xai-wf-val">
+              <span class="badge ${badgeCls}" style="font-family: var(--font-mono);">
                 ${signStr}
               </span>
-              <div style="font-size: 0.62rem; color: var(--text-dim); margin-top: 0.15rem;">${dirLabel}</div>
+              <div style="font-size: 0.68rem; color: var(--text-3); margin-top: 0.15rem;">${dirLabel}</div>
             </div>
           </div>
         `;
@@ -3657,7 +3753,7 @@ function initAegisApp() {
       });
 
       if (all.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-dim);">No health events recorded. Run 1-Click SHAP Demo or inject an anomaly scenario.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="empty-state">No health events recorded. Run 1-click SHAP demo or inject an anomaly scenario.</td></tr>`;
         return;
       }
 
@@ -3671,32 +3767,19 @@ function initAegisApp() {
         const mVersion = expl.model_version || "v1.0.0";
         const occurUtc = ev.occurrence_utc ? new Date(ev.occurrence_utc).toISOString().replace("T", " ").substring(11, 19) + " UTC" : "--";
 
-        let sevBg = "rgba(100, 116, 139, 0.2)";
-        let sevCol = "#94a3b8";
-        if (ev.severity === "CRITICAL") {
-          sevBg = "rgba(239, 68, 68, 0.2)";
-          sevCol = "#f87171";
-        } else if (ev.severity === "HIGH") {
-          sevBg = "rgba(245, 158, 11, 0.2)";
-          sevCol = "#fbbf24";
-        } else if (ev.severity === "MEDIUM") {
-          sevBg = "rgba(59, 130, 246, 0.2)";
-          sevCol = "#60a5fa";
-        }
-
         return `
-          <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.06);">
-            <td style="padding: 0.55rem 0.6rem; font-family: var(--font-mono); font-size: 0.72rem; color: #38bdf8;">${ev.event_id}</td>
-            <td style="padding: 0.55rem 0.6rem;">
-              <span style="background: ${sevBg}; color: ${sevCol}; padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 700; font-size: 0.68rem;">${ev.severity}</span>
+          <tr>
+            <td style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent); font-weight: 600;">${ev.event_id}</td>
+            <td>
+              <span class="badge ${getBadgeClass(ev.severity)}">${ev.severity}</span>
             </td>
-            <td style="padding: 0.55rem 0.6rem; color: #cbd5e1;">${ev.source_pillar || 'Multi-Signal'}</td>
-            <td style="padding: 0.55rem 0.6rem; font-family: var(--font-mono); font-size: 0.72rem; color: #94a3b8;">${occurUtc}</td>
-            <td style="padding: 0.55rem 0.6rem; font-family: var(--font-mono); font-size: 0.72rem; color: #34d399;">${mVersion}</td>
-            <td style="padding: 0.55rem 0.6rem; font-size: 0.72rem; color: #fde68a;">${topDriver}</td>
-            <td style="padding: 0.55rem 0.6rem;">
-              <button class="btn btn-xs btn-outline" style="font-size: 0.68rem; padding: 0.15rem 0.45rem; border-color: rgba(245, 158, 11, 0.4); color: #fbbf24; cursor: pointer;" onclick="window.inspectEventShap('${ev.event_id}')">
-                🔬 Inspect SHAP
+            <td style="color: var(--text);">${ev.source_pillar || 'Multi-Signal'}</td>
+            <td style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-2);">${occurUtc}</td>
+            <td style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--success); font-weight: 600;">${mVersion}</td>
+            <td style="font-size: 0.75rem; color: var(--warning); font-weight: 600;">${topDriver}</td>
+            <td>
+              <button class="btn btn-xs btn-secondary" onclick="window.inspectEventShap('${ev.event_id}')">
+                ${svgIcon("microscope", "icon icon-xs")}<span>Inspect SHAP</span>
               </button>
             </td>
           </tr>
@@ -3716,7 +3799,7 @@ function initAegisApp() {
     if (btn) btn.disabled = true;
 
     if (container) {
-      container.innerHTML = `<div style="color: #fbbf24;">Initializing Feature B End-to-End SHAP Demonstration Scenario...</div>`;
+      container.innerHTML = `<div style="color: var(--accent); font-weight: 600;">Initializing Feature B end-to-end SHAP demonstration scenario...</div>`;
     }
 
     try {
@@ -3725,13 +3808,13 @@ function initAegisApp() {
 
       if (container) {
         container.innerHTML = `
-          <div style="color: #34d399; font-weight: 700;">✓ DEMO SEQUENCE COMPLETED SUCCESSFULLY</div>
-          <div style="color: #38bdf8;">• Step 1: Nominal baseline evaluated (Model Score: ${data.step1_nominal.predicted_score.toFixed(3)}, Baseline: ${data.step1_nominal.base_value.toFixed(3)}). No anomalous perturbation.</div>
-          <div style="color: #f87171;">• Step 2: Anomaly 1 injected while ONLINE (Solar Flare + Cognitive Strain). SHAP attributed +${(data.step2_alert_online.contributions[0].attribution).toFixed(3)} to ${data.step2_alert_online.contributions[0].feature_label}.</div>
-          <div style="color: #fbbf24;">• Step 3: Deep-Space Comms Link severed (${data.step3_comms_state}). Autonomous edge monitoring continues offline.</div>
-          <div style="color: #f87171;">• Step 4: Anomaly 2 generated OFFLINE (Acoustic Hypoxia & Fatigue). Alert & SHAP explanation persisted locally in SQLite (${data.step4_offline_pending_count} pending in queue).</div>
-          <div style="color: #34d399;">• Step 5: Earth link restored & store-and-forward downlink executed to Houston Ground Control (${data.step5_reconnected_sync.synced_count || 1} records transferred).</div>
-          <div style="color: #38bdf8;">• Step 6: Houston Ground ingested ${data.step6_ground_records_count} events with preserved original model versions and intact SHAP explanations!</div>
+          <div style="color: var(--success); font-weight: 700;">Demo sequence completed successfully</div>
+          <div style="color: var(--text);">• Step 1: Nominal baseline evaluated (Model score: ${data.step1_nominal.predicted_score.toFixed(3)}, Baseline: ${data.step1_nominal.base_value.toFixed(3)}). No anomalous perturbation.</div>
+          <div style="color: var(--critical);">• Step 2: Anomaly 1 injected while ONLINE (Solar Flare + Cognitive Strain). SHAP attributed +${(data.step2_alert_online.contributions[0].attribution).toFixed(3)} to ${data.step2_alert_online.contributions[0].feature_label}.</div>
+          <div style="color: var(--warning);">• Step 3: Deep-space comms link severed (${data.step3_comms_state}). Autonomous edge monitoring continues offline.</div>
+          <div style="color: var(--critical);">• Step 4: Anomaly 2 generated OFFLINE (Acoustic Hypoxia &amp; Fatigue). Alert &amp; SHAP explanation persisted locally in SQLite (${data.step4_offline_pending_count} pending in queue).</div>
+          <div style="color: var(--success);">• Step 5: Earth link restored &amp; store-and-forward downlink executed to Houston Ground Control (${data.step5_reconnected_sync.synced_count || 1} records transferred).</div>
+          <div style="color: var(--accent);">• Step 6: Houston Ground ingested ${data.step6_ground_records_count} events with preserved original model versions and intact SHAP explanations.</div>
         `;
       }
 
@@ -3793,6 +3876,7 @@ function initAegisApp() {
 
 
   // Initial Boot
+  syncAllRangeFills();
   fetchInitialState();
   fetchSyncStatusAndTimeline();
   triggerSimulatorUpdate(false);
@@ -3821,23 +3905,38 @@ overlay.className = 'sidebar-overlay';
 document.body.appendChild(overlay);
 
 const menuBtn = document.getElementById('menuToggleBtn');
+const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
 const sidebar = document.querySelector('.sidebar-nav');
 
 function openSidebar() {
+  if (!sidebar) return;
   sidebar.classList.add('open');
   overlay.classList.add('open');
-  menuBtn.textContent = '✕';
+  if (menuBtn) {
+    menuBtn.setAttribute('aria-expanded', 'true');
+    menuBtn.innerHTML = '<svg class="icon icon-md" aria-hidden="true"><use href="#i-x"/></svg>';
+  }
 }
 
 function closeSidebar() {
+  if (!sidebar) return;
   sidebar.classList.remove('open');
   overlay.classList.remove('open');
-  menuBtn.textContent = '☰';
+  if (menuBtn) {
+    menuBtn.setAttribute('aria-expanded', 'false');
+    menuBtn.innerHTML = '<svg class="icon icon-md" aria-hidden="true"><use href="#i-menu"/></svg>';
+  }
 }
 
-menuBtn.addEventListener('click', () => {
-  sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
-});
+if (menuBtn) {
+  menuBtn.addEventListener('click', () => {
+    sidebar && sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+  });
+}
+
+if (sidebarCloseBtn) {
+  sidebarCloseBtn.addEventListener('click', closeSidebar);
+}
 
 overlay.addEventListener('click', closeSidebar);
 

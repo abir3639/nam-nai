@@ -1,0 +1,367 @@
+/* =====================================================================
+   AEGIS-DEEPSPACE — Floating Copilot & Modals
+   (/static/css/dialogs.css)
+   Covers: Compact neutral Copilot launcher & floating drawer,
+           NASA Medical Event Dossier modal, System Architecture modal.
+   ===================================================================== */
+
+/* ---------------------------------------------------------------------
+   1. Floating Copilot Launcher & Chat Window
+   --------------------------------------------------------------------- */
+.copilot-widget {
+  position: fixed;
+  right: 20px;
+  bottom: 16px;
+  z-index: 400;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+/* Compact, neutral launcher — never glowing or oversized */
+.copilot-launcher-btn {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  height: 38px;
+  padding: 0 var(--sp-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-control);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-float);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  transition: background-color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+}
+.copilot-launcher-btn:hover {
+  background: var(--surface-muted);
+  border-color: #BAC2CD;
+}
+.copilot-launcher-btn:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--focus-ring);
+}
+.launcher-icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--accent);
+}
+.launcher-label-box {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.launcher-title {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text);
+}
+.launcher-sub {
+  display: none;
+}
+.launcher-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+}
+
+/* Hide floating launcher when dedicated Copilot tab is active */
+body.copilot-tab-active .copilot-widget {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .copilot-widget {
+    right: 12px;
+    bottom: 12px;
+  }
+  .copilot-launcher-btn {
+    height: 36px;
+    padding: 0 10px;
+  }
+}
+
+/* Floating Chat Window */
+.copilot-chat-window {
+  pointer-events: auto;
+  position: fixed;
+  right: 20px;
+  bottom: 64px;
+  width: 400px;
+  max-width: calc(100vw - 24px);
+  height: 540px;
+  max-height: calc(100vh - var(--header-h) - 88px);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-panel-lg);
+  box-shadow: var(--shadow-dialog);
+  overflow: hidden;
+  animation: aegis-dialog-in var(--dur-panel) var(--ease);
+}
+@media (max-width: 640px) {
+  .copilot-chat-window {
+    right: 12px;
+    left: 12px;
+    bottom: 56px;
+    width: auto;
+    height: 70vh;
+  }
+}
+
+.copilot-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.copilot-header-info {
+  min-width: 0;
+}
+.copilot-header-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.copilot-header-title-row h4 {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+.ch-icon {
+  display: inline-flex;
+  color: var(--accent);
+}
+.ch-badge {
+  padding: 1px 7px;
+  border-radius: var(--r-pill);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+}
+.copilot-header-subtitle {
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  margin-top: 1px;
+}
+.copilot-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.ch-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-2);
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+.ch-btn:hover {
+  background: var(--surface-muted);
+  color: var(--text);
+}
+
+.gemini-input-capsule.floating-capsule {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border-top: 1px solid var(--border);
+  background: var(--surface-muted);
+}
+.gemini-input {
+  flex: 1;
+  min-height: 36px;
+  padding: 0 var(--sp-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-control);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--fs-sm);
+}
+
+/* ---------------------------------------------------------------------
+   2. Modals: Medical Event Dossier & System Architecture
+   --------------------------------------------------------------------- */
+.med-brief-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding: var(--sp-4) var(--sp-5);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.med-brief-title-group {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+.nasa-crest-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: var(--r-control);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-soft-2);
+  color: var(--accent);
+  line-height: 1.1;
+}
+.nasa-crest-text {
+  font-size: 11px;
+  font-weight: 700;
+}
+.nasa-crest-sub {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.med-brief-modal-title {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--text);
+}
+.med-brief-modal-subtitle {
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  margin-top: 2px;
+}
+
+.med-brief-meta-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  padding: var(--sp-2) var(--sp-5);
+  background: var(--surface-muted);
+  border-bottom: 1px solid var(--border);
+  font-size: var(--fs-xs);
+}
+.meta-item {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.meta-label {
+  color: var(--text-2);
+  font-weight: 600;
+}
+.meta-val {
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+.med-brief-chips-row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-5);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+@media (max-width: 760px) {
+  .med-brief-chips-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.brief-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+}
+.brief-chip.risk-critical,
+.brief-chip.risk-high {
+  background: var(--critical-soft);
+  border-color: #E7B7B2;
+}
+.brief-chip.risk-medium {
+  background: var(--warning-soft);
+  border-color: #E9CF9A;
+}
+.brief-chip.risk-low {
+  background: var(--success-soft);
+  border-color: #B9DFC9;
+}
+.chip-label {
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 600;
+}
+.chip-val {
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.med-brief-body {
+  flex: 1;
+  padding: var(--sp-5);
+  overflow-y: auto;
+  background: var(--surface);
+  color: var(--text);
+}
+.med-brief-doc-view {
+  margin: 0;
+  padding: var(--sp-4);
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.med-brief-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  padding: var(--sp-3) var(--sp-5);
+  border-top: 1px solid var(--border);
+  background: var(--surface-muted);
+}
+.footer-left-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+}
+.footer-btns {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}

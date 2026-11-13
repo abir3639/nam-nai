@@ -85,7 +85,12 @@ class RealVoiceVitalsProvider(BaseVoiceVitalsProvider):
         self.baseline = self.profiles.get(self.current_crew_id, DEFAULT_BASELINE).copy()
         self._engine = None
         self._last_analysis: Optional[Dict[str, Any]] = None
+        self._custom_analysis: Optional[Dict[str, Any]] = None
         self._analysis_cache: Dict[str, Dict[str, Any]] = {}
+
+    def clear_custom_analysis(self) -> None:
+        """Clears user-initiated custom audio analysis so scenario presets can take effect."""
+        self._custom_analysis = None
 
     def _get_engine(self):
         """Lazy-loads VoiceVitalsFusionEngine so server startup remains fast."""
@@ -95,15 +100,21 @@ class RealVoiceVitalsProvider(BaseVoiceVitalsProvider):
             self._engine = VoiceVitalsFusionEngine()
         return self._engine
 
-    def analyze_audio(self, audio_path: Optional[str] = None, crew_id: str = "ASTRO-01") -> Dict[str, Any]:
+    def analyze_audio(
+        self,
+        audio_path: Optional[str] = None,
+        crew_id: str = "ASTRO-01",
+        mark_custom: bool = True
+    ) -> Dict[str, Any]:
         """Runs the real acoustic CNN, Whisper STT, and sentiment pipeline on an audio file."""
+        root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
         target_path = audio_path or self.default_audio_path
         if not os.path.isabs(target_path):
-            target_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", target_path))
+            target_path = os.path.abspath(os.path.join(root_dir, target_path))
 
         if not os.path.exists(target_path):
             # Fallback to test_audio.wav if target not found
-            fallback_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "test_audio.wav"))
+            fallback_path = os.path.abspath(os.path.join(root_dir, "test_audio.wav"))
             if os.path.exists(fallback_path):
                 target_path = fallback_path
             else:
@@ -112,6 +123,8 @@ class RealVoiceVitalsProvider(BaseVoiceVitalsProvider):
         cache_key = f"{target_path}:{crew_id}"
         if cache_key in self._analysis_cache:
             self._last_analysis = self._analysis_cache[cache_key]
+            if mark_custom:
+                self._custom_analysis = self._last_analysis
             return self._last_analysis
 
         self.profiles = load_astronaut_profiles()
@@ -128,12 +141,22 @@ class RealVoiceVitalsProvider(BaseVoiceVitalsProvider):
         # Derive cognitive strain
         tel["cognitive_strain"] = round(min(1.0, max(0.0, (1.0 - mood) / 2.0 * 0.7 + fatigue * 0.3)), 2)
 
+        try:
+            rel_path = os.path.relpath(target_path, root_dir).replace("\\", "/")
+            if rel_path.startswith(".."):
+                rel_path = os.path.basename(target_path)
+        except ValueError:
+            rel_path = os.path.basename(target_path)
+
         parsed["crew_id"] = self.current_crew_id
         parsed["astronaut_name"] = self.baseline.get("name", self.current_crew_id)
         parsed["audio_file"] = os.path.basename(target_path)
+        parsed["audio_path"] = rel_path
         parsed["baseline_used"] = self.baseline
 
         self._last_analysis = parsed
+        if mark_custom:
+            self._custom_analysis = parsed
         self._analysis_cache[cache_key] = parsed
         return parsed
 
@@ -162,7 +185,7 @@ class RealVoiceVitalsProvider(BaseVoiceVitalsProvider):
                 fatigued_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "fatigued_log.wav"))
                 if not os.path.exists(fatigued_path):
                     fatigued_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "test_audio.wav"))
-                analysis = self.analyze_audio(fatigued_path)
+                analysis = self.analyze_audio(fatigued_path, mark_custom=False)
                 telemetry = analysis.get("telemetry", {})
                 anomalies = analysis.get("anomalies", {})
                 z_scores = anomalies.get("z_scores", {})
@@ -214,6 +237,24 @@ class RealVoiceVitalsProvider(BaseVoiceVitalsProvider):
 
     def get_full_analysis(self, audio_path: Optional[str] = None, scenario: str = "voice_anomaly") -> Dict[str, Any]:
         """Provides full real Pillar 2 data including transcript, sentiment, CNN scores, and alerts."""
+        if audio_path is None and self._custom_analysis is not None:
+            custom = self._custom_analysis
+            return {
+                "status": "REAL_PIPELINE_ACTIVE",
+                "audio_file": custom.get("audio_file", "normal_log.wav"),
+                "audio_path": custom.get("audio_path", custom.get("audio_file", "normal_log.wav")),
+                "crew_id": custom.get("crew_id", self.current_crew_id),
+                "astronaut_name": custom.get("astronaut_name", self.baseline.get("name", self.current_crew_id)),
+                "telemetry": custom.get("telemetry", {}),
+                "anomalies": custom.get("anomalies", {}),
+                "baseline": custom.get("baseline_used", self.baseline),
+                "models_loaded": {
+                    "acoustic_cnn": "1D-CNN (MFCC-13 -> 32 -> 64 -> Linear -> Sigmoid)",
+                    "speech_to_text": "OpenAI Whisper tiny.en",
+                    "nlp_sentiment": "DistilBERT fine-tuned SST-2"
+                }
+            }
+
         target_path = audio_path or self.default_audio_path
         
         # If the active scenario is nominal or solar storm (non-voice anomaly), provide healthy baseline telemetry
@@ -221,6 +262,9 @@ class RealVoiceVitalsProvider(BaseVoiceVitalsProvider):
             return {
                 "status": "REAL_PIPELINE_ACTIVE",
                 "audio_file": "nominal_comm_log.wav",
+                "audio_path": "normal_log.wav",
+                "crew_id": self.current_crew_id,
+                "astronaut_name": self.baseline.get("name", self.current_crew_id),
                 "telemetry": {
                     "transcript": "Aegis, this is Ares flight crew. Routine habitat systems check nominal. All crew vitals feeling great.",
                     "mood_valence": 0.88,
@@ -248,7 +292,7 @@ class RealVoiceVitalsProvider(BaseVoiceVitalsProvider):
         # Otherwise run or retrieve the real inference from the anomaly audio
         if self._last_analysis is None:
             try:
-                self.analyze_audio(target_path)
+                self.analyze_audio(target_path, mark_custom=False)
             except Exception:
                 # Safe fallback if audio hardware execution is busy
                 return {
@@ -283,7 +327,10 @@ class RealVoiceVitalsProvider(BaseVoiceVitalsProvider):
 
         return {
             "status": "REAL_PIPELINE_ACTIVE",
-            "audio_file": os.path.basename(target_path),
+            "audio_file": self._last_analysis.get("audio_file", os.path.basename(target_path)),
+            "audio_path": self._last_analysis.get("audio_path", os.path.basename(target_path)),
+            "crew_id": self._last_analysis.get("crew_id", self.current_crew_id),
+            "astronaut_name": self._last_analysis.get("astronaut_name", self.baseline.get("name", self.current_crew_id)),
             "telemetry": telemetry,
             "anomalies": anomalies,
             "baseline": self.baseline,

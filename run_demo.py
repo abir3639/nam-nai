@@ -71,25 +71,26 @@ def run_cli_demo():
         print("\n")
 
 
-def start_server(host: str = "127.0.0.1", port: int = 8000):
+def start_server(host: str = "0.0.0.0", port: int = 8000, reload: bool = False):
     """Starts the FastAPI web server."""
-    print(f"Starting Aegis-DeepSpace Flight Surgeon Dashboard on http://{host}:{port}")
-    uvicorn.run("aegis_deepspace.server:app", host=host, port=port, reload=True)
+    print(f"Starting Aegis-DeepSpace Flight Surgeon Dashboard on http://{host}:{port} (reload={reload})")
+    uvicorn.run("aegis_deepspace.server:app", host=host, port=port, reload=reload)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Aegis-DeepSpace Pillar 4")
     parser.add_argument("--cli", action="store_true", help="Run terminal scenario demo")
     parser.add_argument("--serve", action="store_true", help="Start dashboard web server")
-    parser.add_argument("--host", default="127.0.0.1", help="Host address")
-    parser.add_argument("--port", type=int, default=8000, help="Port number")
+    parser.add_argument("--host", default="0.0.0.0", help="Host address (default: 0.0.0.0)")
+    parser.add_argument("--port", type=int, default=8000, help="Port number (default: 8000)")
+    parser.add_argument("--reload", action="store_true", help="Enable auto-reload for development (disabled by default)")
 
     args = parser.parse_args()
 
     if args.cli:
         run_cli_demo()
     elif args.serve:
-        start_server(args.host, args.port)
+        start_server(args.host, args.port, reload=args.reload)
     else:
         # Default: run CLI demo then notify how to run server
         run_cli_demo()
